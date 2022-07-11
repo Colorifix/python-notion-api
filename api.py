@@ -2,7 +2,13 @@ import requests
 import logging
 import json
 
-from notion_integration.api.models.objects import DatabaseObject
+from notion_integration.api.utils import slugify
+
+from notion_integration.api.models.objects import (
+    DatabaseObject,
+    PageObject
+)
+
 from notion_integration.api.models.properties import (
     NotionProperty, RelationProperty
 )
@@ -19,47 +25,66 @@ class NotionPage:
     def __init__(self, api, page_id):
         self.api = api
         self.page_id = page_id
-        self._properties = None
+        self._properties_cache = None
+        self._object = None
 
-    def update(self, properties):
-        self.api.patch(
-            endpoint=f'pages/{self.page_id}',
-            data=json.dumps({
-                'properties': properties
-            })
-        )
-        self.reload()
-
-    def reload(self):
-        obj = self.api.get(endpoint=f'pages/{self.page_id}')
-        self._properties = {
-            key: NotionProperty.from_obj(val)
-            for key, val in obj['properties'].items()
-        }
-
-    @property
-    def properties(self):
-        if self._properties is None:
-            self.reload()
-        return self._properties
-
-    def to_dict(self, include_rels=True):
-        if include_rels is True:
-            return {
-                key: val.value for key, val in self.properties.items()
-            }
+        ret = self.api.get(endpoint=f'pages/{self.page_id}')
+        if ret is not None:
+            self._object = PageObject(**ret)
         else:
-            return {
-                key: val.value for key, val in self.properties.items()
-                if not isinstance(val, RelationProperty)
-            }
+            raise ValueError(f"Page {page_id} could not be found")
 
-    @property
-    def relations(self):
-        return {
-            key: val for key, val in self.properties.items()
-            if isinstance(val, RelationProperty)
-        }
+    def _read_property(self, prop_name):
+        if prop_name in self._object.properties:
+            prop_id = self._object.properties[prop_name].property_id
+            ret = self.api.get(
+                endpoint=f'pages/{self.page_id}/properties/{prop_id}'
+            )
+            if ret is not None:
+                breakpoint()
+                self._properties_cache = NotionProperty.from_obj(ret)
+
+    # @property
+    # def properties(self):
+    #     if self._properties is None:
+    #         self.reload()
+    #     return self._properties
+
+    # def to_dict(self, include_rels=True):
+    #     if include_rels is True:
+    #         return {
+    #             key: val.value for key, val in self.properties.items()
+    #         }
+    #     else:
+    #         return {
+    #             key: val.value for key, val in self.properties.items()
+    #             if not isinstance(val, RelationProperty)
+    #         }
+
+    # def __getattr__(self, key):
+    #     breakpoint()
+    #     prop_key = next(
+    #         (
+    #             pk for pk in self._properties
+    #             if slugify(pk) == key
+    #         ),
+    #         None
+    #     )
+
+    #     return self._properties[prop_key]
+
+    # @property
+    # def last_edited_time(self):
+    #     if self.object is None:
+    #         self.reload()
+    #     return self.object.last_edited_time
+
+    # @property
+    # def relations(self):
+    #     return {
+    #         key: val for key, val in self.properties.items()
+    #         if isinstance(val, RelationProperty)
+    #     }
 
 
 class NotionDatabase:
@@ -133,7 +158,7 @@ class NotionAPI:
         headers.update(
             {
                 'Authorization': f'Bearer {self.access_token}',
-                'Notion-Version': '2021-05-13'
+                'Notion-Version': '2022-06-28'
             }
         )
 
@@ -187,15 +212,12 @@ class NotionAPI:
     def get_database(self, database_id):
         return NotionDatabase(self, database_id)
 
+
 if __name__ == '__main__':
     token = "***REMOVED***"
     api = NotionAPI(access_token=token)
-    db = api.get_database('94b47deaf77c4a1dbe9ba0dbb5a92791')
-    pages = db.query()
-    pages[0].update(
-        {
-            'Foo': {
-                'relation': [{'id':'b85fc2c8-a426-45cb-93e5-1b29a9184121'}]
-            }
-        }
-    )
+    db = api.get_database('af4a974eda13475d820580d84a71cf4c')
+    page = next(db.query())
+    page._read_property("Link")
+
+    breakpoint()

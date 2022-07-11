@@ -1,8 +1,8 @@
-from pydantic import BaseModel, Extra
-from typing import Optional, Literal, List
+from pydantic import BaseModel, Extra, ValidationError
+from typing import Optional, Literal, List, Dict
 
 from notion_integration.api.models.fields import (
-    idField, typeField
+    idField, typeField, objectField
 )
 
 from notion_integration.api.models.objects import (
@@ -13,7 +13,6 @@ from notion_integration.api.models.objects import (
     FormulaObject,
     PageReferenceObject,
     RollupObject,
-    FileObject,
     StatusObject,
     FileReferenceObject
 )
@@ -42,9 +41,26 @@ property_map = {
 }
 
 
-class NotionProperty(BaseModel, extra=Extra.allow):
+class PaginationObject(BaseModel):
+    has_more: bool
+    next_cursor: str
+    results: List
+    paginaton_object: Literal["object"] = objectField
+    pagination_type: Literal[
+        "block", "page", "user", "database", "property_item",
+        "page_or_database"
+    ] = typeField
+
+
+class PropertyItemPaginationObject(PaginationObject):
+    pagination_item: Dict
+
+
+class NotionPropertyItemObject(BaseModel, extra=Extra.allow):
+    property_object: str = objectField
     property_id: str = idField
     propety_type: Optional[str] = typeField
+    next_url: Optional[str]
 
     @classmethod
     def from_obj(cls, obj):
@@ -62,12 +78,12 @@ class NotionProperty(BaseModel, extra=Extra.allow):
     @staticmethod
     def _get_propetry_cls(cls_name):
         return next((
-            cls for cls in NotionProperty.__subclasses__()
+            cls for cls in NotionPropertyValue.__subclasses__()
             if cls.__name__ == cls_name
         ), None)
 
 
-class TitleProperty(NotionProperty):
+class TitlePropertyValue(NotionPropertyValue):
     title: List[RichTextObject]
 
     @property
@@ -75,7 +91,7 @@ class TitleProperty(NotionProperty):
         return "".join([rto.plain_text for rto in self.title])
 
 
-class RichTextProperty(NotionProperty):
+class RichTextPropertyValue(NotionPropertyValue):
     rich_text: List[RichTextObject]
 
     @property
@@ -83,7 +99,7 @@ class RichTextProperty(NotionProperty):
         return "".join([rto.plain_text for rto in self.rich_text])
 
 
-class NumberProperty(NotionProperty):
+class NumberPropertyValue(NotionPropertyValue):
     number: float
 
     @property
@@ -91,7 +107,7 @@ class NumberProperty(NotionProperty):
         return self.number
 
 
-class SelectProperty(NotionProperty):
+class SelectPropertyValue(NotionPropertyValue):
     select: SelectObject
 
     @property
@@ -99,7 +115,7 @@ class SelectProperty(NotionProperty):
         return self.select.name
 
 
-class StatusProperty(NotionProperty):
+class StatusPropertyValue(NotionPropertyValue):
     status: StatusObject
 
     @property
@@ -107,7 +123,7 @@ class StatusProperty(NotionProperty):
         return self.status.name
 
 
-class MultiSelectProperty(NotionProperty):
+class MultiSelectPropertyValue(NotionPropertyValue):
     multi_select: List[SelectObject]
 
     @property
@@ -115,7 +131,7 @@ class MultiSelectProperty(NotionProperty):
         return [so.name for so in self.multi_select]
 
 
-class DateProperty(NotionProperty):
+class DatePropertyValue(NotionPropertyValue):
     date: DatePropertyValueObject
 
     @property
@@ -123,7 +139,7 @@ class DateProperty(NotionProperty):
         return self.date.start
 
 
-class FormulaProperty(NotionProperty):
+class FormulaPropertyValue(NotionPropertyValue):
     formula: FormulaObject
 
     @property
@@ -131,7 +147,7 @@ class FormulaProperty(NotionProperty):
         return ''
 
 
-class RelationProperty(NotionProperty):
+class RelationPropertyValue(NotionPropertyValue):
     relation: List[PageReferenceObject]
 
     @property
@@ -139,7 +155,7 @@ class RelationProperty(NotionProperty):
         return [pr.page_id for pr in self.relation]
 
 
-class RollupProperty(NotionProperty):
+class RollupPropertyValue(NotionPropertyValue):
     rollup: RollupObject
 
     @property
@@ -147,7 +163,7 @@ class RollupProperty(NotionProperty):
         return ''
 
 
-class PeopleProperty(NotionProperty):
+class PeoplePropertyValue(NotionPropertyValue):
     people: List[UserObject]
 
     @property
@@ -155,7 +171,7 @@ class PeopleProperty(NotionProperty):
         return [p.name for p in self.people]
 
 
-class FilesProperty(NotionProperty):
+class FilesPropertyValue(NotionPropertyValue):
     files: List[FileReferenceObject]
 
     @property
@@ -163,7 +179,7 @@ class FilesProperty(NotionProperty):
         return [file.value for file in self.files] 
 
 
-class CheckBoxProperty(NotionProperty):
+class CheckBoxPropertyValue(NotionPropertyValue):
     checkbox: bool
 
     @property
@@ -171,7 +187,7 @@ class CheckBoxProperty(NotionProperty):
         return self.checkbox
 
 
-class URLProperty(NotionProperty):
+class URLPropertyValue(NotionPropertyValue):
     url: str
 
     @property
@@ -179,7 +195,7 @@ class URLProperty(NotionProperty):
         return self.url
 
 
-class EmailProperty(NotionProperty):
+class EmailPropertyValue(NotionPropertyValue):
     email: str
 
     @property
@@ -187,7 +203,7 @@ class EmailProperty(NotionProperty):
         return self.email
 
 
-class PhoneNumberProperty(NotionProperty):
+class PhoneNumberPropertyValue(NotionPropertyValue):
     phone_number: str
 
     @property
@@ -195,7 +211,7 @@ class PhoneNumberProperty(NotionProperty):
         return self.phone_number
 
 
-class CreatedTimeProperty(NotionProperty):
+class CreatedTimePropertyValue(NotionPropertyValue):
     created_time: str
 
     @property
@@ -203,7 +219,7 @@ class CreatedTimeProperty(NotionProperty):
         return self.created_time
 
 
-class CreatedByProperty(NotionProperty):
+class CreatedByPropertyValue(NotionPropertyValue):
     created_by: UserObject
 
     @property
@@ -211,7 +227,7 @@ class CreatedByProperty(NotionProperty):
         return self.created_by.name
 
 
-class LastEditedTimeProperty(NotionProperty):
+class LastEditedTimePropertyValue(NotionPropertyValue):
     last_edited_time: str
 
     @property
@@ -219,7 +235,7 @@ class LastEditedTimeProperty(NotionProperty):
         return self.last_edited_time
 
 
-class LastEditedByProperty(NotionProperty):
+class LastEditedByPropertyValue(NotionPropertyValue):
     last_edited_by: UserObject
 
     @property

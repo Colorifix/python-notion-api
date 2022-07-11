@@ -18,7 +18,9 @@ from notion_integration.api.models.objects import (
     FileReferenceObject,
     RelationConfigurationObject,
     RollupConfigurationObject,
-    StatusObject
+    StatusObject,
+    PageObject,
+    ParentObject
 )
 
 from notion_integration.api.models.properties import (
@@ -87,6 +89,8 @@ __all__ = [
     "RelationConfigurationObject",
     "RollupConfigurationObject",
     "StatusObject",
+    "PageObject",
+    "ParentObject",
     "NotionProperty",
     "TitleProperty",
     "RichTextProperty",

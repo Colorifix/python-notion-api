@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Optional, Dict, List, Union
+
 from datetime import datetime
 
 from notion_integration.api.models.fields import (
@@ -69,9 +70,31 @@ class DatabaseObject(BaseModel):
     is_inline: bool
 
 
+class ParentObject(BaseModel):
+    parent_type: str = typeField
+    page_id: Optional[str]
+    database_id: Optional[str]
+
+
+class PropertyObject(BaseModel):
+    property_id: str = idField
+
+
+class PageObject(BaseModel):
+    page_object: str = objectField
+    page_id: str = idField
+    created_time: datetime
+    created_by: UserObject
+    last_edited_time: datetime
+    last_edited_by: UserObject
+    cover: Optional[FileObject]
+    properties: Dict[str, PropertyObject]
+    parent: ParentObject
+
+
 class DatePropertyValueObject(BaseModel):
-    start: str
-    end: Optional[str]
+    start: datetime
+    end: Optional[datetime]
     time_zone: Optional[str]
 
 
