@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Extra, ValidationError
-from typing import Optional, Literal, List, Dict
+from typing import Optional, Literal, List, Dict, ClassVar, Callable
 
 from notion_integration.api.models.fields import (
     idField, typeField, objectField
@@ -17,73 +17,114 @@ from notion_integration.api.models.objects import (
     FileReferenceObject
 )
 
-property_map = {
-    "rich_text": "RichTextProperty",
-    "number": "NumberProperty",
-    "select": "SelectProperty",
-    "multi_select": "MultiSelectProperty",
-    "status": "StatusProperty",
-    "date": "DateProperty",
-    "formula": "FormulaProperty",
-    "relation": "RelationProperty",
-    "rollup": "RollupProperty",
-    "title": "TitleProperty",
-    "people": "PeopleProperty",
-    "files": "FilesProperty",
-    "checkbox": "CheckBoxProperty",
-    "url": "URLProperty",
-    "email": "EmailProperty",
-    "phone_number": "PhoneNumberProperty",
-    "created_time": "CreatedTimeProperty",
-    "created_by": "CreatedByProperty",
-    "last_edited_time": "LastEditedTimeProperty",
-    "last_edited_by": "LastEditedByProperty"
-}
+
+def get_derived_class(self, base_class, derived_cass_name):
+    return next((
+        cls for cls in base_class.__subclasses__()
+        if cls.__name__ == derived_cass_name
+    ), None)
 
 
-class PaginationObject(BaseModel):
+class NotionObjectBase(BaseModel):
+    _class_map: Optional[ClassVar[Dict[str, str]]]
+
+    @classmethod
+    def from_obj(cls, obj):
+        temp_obj = cls(obj)
+        class_key_value = temp_obj._class_key_field
+        if class_key_value is None:
+            raise ValueError(
+                f"Given object does not have a {cls._class_key_field} field"
+            )
+
+        class_name = cls._class_map.get(class_key_value, None)
+        if class_name is None:
+            raise ValueError(
+                f"Unknown object {cls._class_key_field}: '{class_key_value}'"
+            )
+
+        derived_cls = get_derived_class(cls, class_name)
+
+        if derived_cls._class_key_field is not None:
+            return derived_cls.from_obj(obj)
+
+
+class NotionObject(NotionObjectBase, extra=Extra.allow):
+    notion_object: str = objectField
+
+    _class_map = {
+        "list": "Pagination",
+        "property_item": "PropetyItem"
+    }
+
+    @property
+    def _class_key_field(self):
+        return self.notion_object
+
+
+class Pagination(NotionObject):
     has_more: bool
     next_cursor: str
     results: List
-    paginaton_object: Literal["object"] = objectField
     pagination_type: Literal[
         "block", "page", "user", "database", "property_item",
         "page_or_database"
     ] = typeField
 
+    _class_map = {
+        "property_item": "PropertyItemPagination"
+    }
 
-class PropertyItemPaginationObject(PaginationObject):
+    @property
+    def _class_key_field(self):
+        return self.pagination_type
+
+
+class PropertyItemPagination(Pagination):
     pagination_item: Dict
 
+    _class_map = {
+        "rich_text": "RichTextPagination",
+        "title": "TitlePagination",
+        "people": "PeoplePagination",
+        "relationships": "RelationshipsPagination"
+    }
 
-class NotionPropertyItemObject(BaseModel, extra=Extra.allow):
-    property_object: str = objectField
+    @property
+    def _class_key_field(self):
+        return self.pagination_item['type']
+
+
+class PropertyItem(NotionObject):
     property_id: str = idField
     propety_type: Optional[str] = typeField
     next_url: Optional[str]
 
-    @classmethod
-    def from_obj(cls, obj):
-        for propery_key, property_class_name in property_map.items():
-            if propery_key in obj:
-                prop_cls = cls._get_propetry_cls(property_class_name)
-                if prop_cls is None:
-                    raise ValueError(f"{property_class_name} is unknown")
-                try:
-                    prop = prop_cls(**obj)
-                except Exception:
-                    breakpoint()
-                return prop
+    _class_map = {
+        "number": "NumberProperty",
+        "select": "SelectProperty",
+        "multi_select": "MultiSelectProperty",
+        "status": "StatusProperty",
+        "date": "DateProperty",
+        "formula": "FormulaProperty",
+        "rollup": "RollupProperty",
+        "files": "FilesProperty",
+        "checkbox": "CheckBoxProperty",
+        "url": "URLProperty",
+        "email": "EmailProperty",
+        "phone_number": "PhoneNumberProperty",
+        "created_time": "CreatedTimeProperty",
+        "created_by": "CreatedByProperty",
+        "last_edited_time": "LastEditedTimeProperty",
+        "last_edited_by": "LastEditedByProperty"
+    }
 
-    @staticmethod
-    def _get_propetry_cls(cls_name):
-        return next((
-            cls for cls in NotionPropertyValue.__subclasses__()
-            if cls.__name__ == cls_name
-        ), None)
+    @property
+    def _class_key_field(self):
+        return self.propety_type
 
 
-class TitlePropertyValue(NotionPropertyValue):
+class TitlePropertyItem(PropertyItem):
     title: List[RichTextObject]
 
     @property
@@ -91,15 +132,23 @@ class TitlePropertyValue(NotionPropertyValue):
         return "".join([rto.plain_text for rto in self.title])
 
 
-class RichTextPropertyValue(NotionPropertyValue):
-    rich_text: List[RichTextObject]
+class TitlePagination(PropertyItemPagination):
+    results: List[TitlePropertyItem]
+
+
+class RichTextPropertyItem(PropertyItem):
+    rich_text: RichTextObject
 
     @property
     def value(self):
         return "".join([rto.plain_text for rto in self.rich_text])
 
 
-class NumberPropertyValue(NotionPropertyValue):
+class RichTextPagination(PropertyItemPagination):
+    results: List[RichTextPropertyItem]
+
+
+class NumberPropertyItem(PropertyItem):
     number: float
 
     @property
@@ -107,7 +156,7 @@ class NumberPropertyValue(NotionPropertyValue):
         return self.number
 
 
-class SelectPropertyValue(NotionPropertyValue):
+class SelectPropertyItem(PropertyItem):
     select: SelectObject
 
     @property
@@ -115,7 +164,7 @@ class SelectPropertyValue(NotionPropertyValue):
         return self.select.name
 
 
-class StatusPropertyValue(NotionPropertyValue):
+class StatusPropertyItem(PropertyItem):
     status: StatusObject
 
     @property
@@ -123,7 +172,7 @@ class StatusPropertyValue(NotionPropertyValue):
         return self.status.name
 
 
-class MultiSelectPropertyValue(NotionPropertyValue):
+class MultiSelectPropertyItem(PropertyItem):
     multi_select: List[SelectObject]
 
     @property
@@ -131,7 +180,7 @@ class MultiSelectPropertyValue(NotionPropertyValue):
         return [so.name for so in self.multi_select]
 
 
-class DatePropertyValue(NotionPropertyValue):
+class DatePropertyItem(PropertyItem):
     date: DatePropertyValueObject
 
     @property
@@ -139,7 +188,7 @@ class DatePropertyValue(NotionPropertyValue):
         return self.date.start
 
 
-class FormulaPropertyValue(NotionPropertyValue):
+class FormulaPropertyItem(PropertyItem):
     formula: FormulaObject
 
     @property
@@ -147,15 +196,19 @@ class FormulaPropertyValue(NotionPropertyValue):
         return ''
 
 
-class RelationPropertyValue(NotionPropertyValue):
-    relation: List[PageReferenceObject]
+class RelationPropertyItem(PropertyItem):
+    relation: PageReferenceObject
 
     @property
     def value(self):
         return [pr.page_id for pr in self.relation]
 
 
-class RollupPropertyValue(NotionPropertyValue):
+class RelationPagination(PropertyItemPagination):
+    results: List[RelationPropertyItem]
+
+
+class RollupPropertyItem(PropertyItem):
     rollup: RollupObject
 
     @property
@@ -163,15 +216,19 @@ class RollupPropertyValue(NotionPropertyValue):
         return ''
 
 
-class PeoplePropertyValue(NotionPropertyValue):
-    people: List[UserObject]
+class PeoplePropertyItem(PropertyItem):
+    people: UserObject
 
     @property
     def value(self):
         return [p.name for p in self.people]
 
 
-class FilesPropertyValue(NotionPropertyValue):
+class PeoplePagination(PropertyItemPagination):
+    results: List[RelationPropertyItem]
+
+
+class FilesPropertyItem(PropertyItem):
     files: List[FileReferenceObject]
 
     @property
@@ -179,7 +236,7 @@ class FilesPropertyValue(NotionPropertyValue):
         return [file.value for file in self.files] 
 
 
-class CheckBoxPropertyValue(NotionPropertyValue):
+class CheckBoxPropertyItem(PropertyItem):
     checkbox: bool
 
     @property
@@ -187,7 +244,7 @@ class CheckBoxPropertyValue(NotionPropertyValue):
         return self.checkbox
 
 
-class URLPropertyValue(NotionPropertyValue):
+class URLPropertyItem(PropertyItem):
     url: str
 
     @property
@@ -195,7 +252,7 @@ class URLPropertyValue(NotionPropertyValue):
         return self.url
 
 
-class EmailPropertyValue(NotionPropertyValue):
+class EmailPropertyItem(PropertyItem):
     email: str
 
     @property
@@ -203,7 +260,7 @@ class EmailPropertyValue(NotionPropertyValue):
         return self.email
 
 
-class PhoneNumberPropertyValue(NotionPropertyValue):
+class PhoneNumberPropertyItem(PropertyItem):
     phone_number: str
 
     @property
@@ -211,7 +268,7 @@ class PhoneNumberPropertyValue(NotionPropertyValue):
         return self.phone_number
 
 
-class CreatedTimePropertyValue(NotionPropertyValue):
+class CreatedTimePropertyItem(PropertyItem):
     created_time: str
 
     @property
@@ -219,7 +276,7 @@ class CreatedTimePropertyValue(NotionPropertyValue):
         return self.created_time
 
 
-class CreatedByPropertyValue(NotionPropertyValue):
+class CreatedByPropertyItem(PropertyItem):
     created_by: UserObject
 
     @property
@@ -227,7 +284,7 @@ class CreatedByPropertyValue(NotionPropertyValue):
         return self.created_by.name
 
 
-class LastEditedTimePropertyValue(NotionPropertyValue):
+class LastEditedTimePropertyItem(PropertyItem):
     last_edited_time: str
 
     @property
@@ -235,7 +292,7 @@ class LastEditedTimePropertyValue(NotionPropertyValue):
         return self.last_edited_time
 
 
-class LastEditedByPropertyValue(NotionPropertyValue):
+class LastEditedByPropertyItem(PropertyItem):
     last_edited_by: UserObject
 
     @property

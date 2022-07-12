@@ -34,6 +34,9 @@ class NotionPage:
         else:
             raise ValueError(f"Page {page_id} could not be found")
 
+    def _obj_to_propety(self, obj):
+        
+
     def _read_property(self, prop_name):
         if prop_name in self._object.properties:
             prop_id = self._object.properties[prop_name].property_id
