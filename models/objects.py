@@ -1,11 +1,81 @@
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Dict, List, Union
+from pydantic import BaseModel, Field, Extra
+from typing import Literal, Optional, Dict, List, Union, ClassVar
 
 from datetime import datetime
 
 from notion_integration.api.models.fields import (
     idField, typeField, objectField
 )
+
+
+def get_derived_class(base_class, derived_cass_name):
+    return next((
+        cls for cls in base_class.__subclasses__()
+        if cls.__name__ == derived_cass_name
+    ), None)
+
+
+class NotionObjectBase(BaseModel):
+    _class_map: ClassVar[Dict[str, str]]
+
+    @classmethod
+    def from_obj(cls, obj):
+        temp_obj = cls(**obj)
+
+        class_key_value = temp_obj._class_key_field
+        if class_key_value is None:
+            return temp_obj
+
+        class_name = cls._class_map.get(class_key_value, None)
+        if class_name is None:
+            raise ValueError(
+                f"Unknown object"
+                f"{temp_obj._class_key_field}: '{class_key_value}'"
+            )
+        derived_cls = get_derived_class(cls, class_name)
+
+        if derived_cls is None:
+            raise ValueError(f"Can find {class_name}({cls.__name__})")
+
+        return derived_cls.from_obj(obj)
+
+    @property
+    def _class_key_field(self):
+        return None
+
+
+class NotionObject(NotionObjectBase, extra=Extra.allow):
+    notion_object: str = objectField
+
+    _class_map = {
+        "list": "Pagination",
+        "property_item": "PropetyItem",
+        "database": "Database",
+        "page": "Page"
+    }
+
+    @property
+    def _class_key_field(self):
+        return self.notion_object
+
+
+class Pagination(NotionObject):
+    has_more: bool
+    next_cursor: Optional[str]
+    results: List
+    pagination_type: Literal[
+        "block", "page", "user", "database", "property_item",
+        "page_or_database"
+    ] = typeField
+
+    _class_map = {
+        "property_item": "PropertyItemPagination",
+        "page": "PagePagination"
+    }
+
+    @property
+    def _class_key_field(self):
+        return self.pagination_type
 
 
 class RichTextObject(BaseModel):
@@ -52,7 +122,9 @@ class UserObject(BaseModel):
     ] = Field(alias="owner.type")
 
 
-class DatabaseObject(BaseModel):
+class Database(NotionObject):
+    _class_key_field = None
+
     db_object: str = objectField
     db_id: str = idField
     created_time: str
@@ -80,7 +152,9 @@ class PropertyObject(BaseModel):
     property_id: str = idField
 
 
-class PageObject(BaseModel):
+class Page(NotionObject):
+    _class_key_field = None
+
     page_object: str = objectField
     page_id: str = idField
     created_time: datetime
@@ -90,6 +164,13 @@ class PageObject(BaseModel):
     cover: Optional[FileObject]
     properties: Dict[str, PropertyObject]
     parent: ParentObject
+
+
+class PagePagination(Pagination):
+    _class_key_field = None
+
+    page: Dict
+    results: List[Page]
 
 
 class DatePropertyValueObject(BaseModel):

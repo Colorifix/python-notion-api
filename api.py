@@ -2,15 +2,16 @@ import requests
 import logging
 import json
 
-from notion_integration.api.utils import slugify
-
 from notion_integration.api.models.objects import (
-    DatabaseObject,
-    PageObject
+    Database,
+    Pagination
 )
 
 from notion_integration.api.models.properties import (
-    NotionProperty, RelationProperty
+     NotionObject,
+     PropertyItemPagination,
+     RichTextPagination,
+     TitlePagination
 )
 from notion_integration.api.models.configurations import (
     RelationPropertyConfiguration,
@@ -21,6 +22,27 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+class PropertyItemIterator:
+    def __init__(self, generator):
+        self.generator = generator
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.generator).value
+
+
+class StringPropertyItemIterator(PropertyItemIterator):
+    def all(self):
+        return "".join([item.value for item in self.generator])
+
+
+class ListPropertyItemIterator(PropertyItemIterator):
+    def all(self):
+        return [item.value for item in self.generator]
+
+
 class NotionPage:
     def __init__(self, api, page_id):
         self.api = api
@@ -28,14 +50,9 @@ class NotionPage:
         self._properties_cache = None
         self._object = None
 
-        ret = self.api.get(endpoint=f'pages/{self.page_id}')
-        if ret is not None:
-            self._object = PageObject(**ret)
-        else:
+        self._object = self.api.get(endpoint=f'pages/{self.page_id}')
+        if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
-
-    def _obj_to_propety(self, obj):
-        
 
     def _read_property(self, prop_name):
         if prop_name in self._object.properties:
@@ -43,9 +60,20 @@ class NotionPage:
             ret = self.api.get(
                 endpoint=f'pages/{self.page_id}/properties/{prop_id}'
             )
-            if ret is not None:
-                breakpoint()
-                self._properties_cache = NotionProperty.from_obj(ret)
+            if isinstance(ret, Pagination):
+                generator = self.api.get_iterate(
+                    endpoint=f'pages/{self.page_id}/properties/{prop_id}'
+                )
+
+                if (
+                    isinstance(ret, TitlePagination) or
+                    isinstance(ret, RichTextPagination)
+                ):
+                    return StringPropertyItemIterator(generator)
+                else:
+                    return ListPropertyItemIterator(generator)
+            else:
+                return ret.value
 
     # @property
     # def properties(self):
@@ -94,47 +122,27 @@ class NotionDatabase:
     def __init__(self, api, database_id):
         self.api = api
         self.database_id = database_id
-        ret = self.api.get(endpoint=f'databases/{self.database_id}')
-
-        if ret is None:
-            raise Exception(f"Error accessing database {self.database_id}")
-
-        self.object = DatabaseObject(
-            **ret
+        self.obj = self.api.get(
+            endpoint=f'databases/{self.database_id}',
+            cast_cls=Database
         )
+
+        if self.obj is None:
+            raise Exception(f"Error accessing database {self.database_id}")
 
         self._properties = {
             key: NotionPropertyConfiguration.from_obj(val)
-            for key, val in self.object.properties.items()
+            for key, val in self.obj.properties.items()
         }
         self.title = "".join(
-            rt.plain_text for rt in self.object.title
+            rt.plain_text for rt in self.obj.title
         )
 
     def query(self, filter_params={}, sort_params=[]):
-        has_more = True
-        cursor = None
-
-        while has_more:
-            data = {
-                'start_cursor': cursor,
-                'page_size': 100
-                # 'filter': filter_params,
-                # 'sorts': sort_params
-            }
-
-            if cursor is None:
-                data.pop('start_cursor')
-            response = self.api.post(
-                endpoint=f'databases/{self.database_id}/query',
-                data=json.dumps(data)
-            )
-
-            for page in response['results']:
-                yield NotionPage(self.api, page['id'])
-
-            has_more = response['has_more']
-            cursor = response['next_cursor']
+        for item in self.api.post_iterate(
+            endpoint=f'databases/{self.database_id}/query'
+        ):
+            yield NotionPage(api=api, page_id=item.page_id)
 
     @property
     def properties(self):
@@ -154,7 +162,7 @@ class NotionAPI:
         self.base_url = "https://api.notion.com/v1/"
 
     def request(self, request_type, endpoint='', params={}, data=None,
-                headers={}, url=None, attempt=0):
+                headers={}, url=None, attempt=0, cast_cls=NotionObject):
         url = url or self.base_url + endpoint
         request = getattr(requests, request_type)
 
@@ -173,39 +181,93 @@ class NotionAPI:
         )
 
         if response.status_code == 200:
-            return response.json()
+            return cast_cls.from_obj(response.json())
         else:
-            log.error(f"Request to {url} failed:\n{response.status_code}\n{response.text}")
+            log.error(
+                f"Request to {url} failed:"
+                f"\n{response.status_code}\n{response.text}"
+            )
 
-    def post(self, endpoint, data=None, params={}):
+    def post(self, endpoint, data=None, params={}, cast_cls=NotionObject):
         return self.request(
             request_type='post',
             endpoint=endpoint,
             data=data,
             params=params,
+            cast_cls=cast_cls,
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
         )
 
-    def get(self, endpoint, params={}):
+    def get(self, endpoint, params={}, cast_cls=NotionObject):
         return self.request(
             request_type='get',
             endpoint=endpoint,
             params=params,
+            cast_cls=cast_cls,
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
-            }
+            },
         )
 
-    def patch(self, endpoint, params={}, data={}):
+    def post_iterate(self, endpoint, data={}):
+        has_more = True
+        cursor = None
+
+        while has_more:
+            data.update({
+                'start_cursor': cursor,
+                'page_size': 100
+            })
+
+            if cursor is None:
+                data.pop('start_cursor')
+
+            response = self.post(
+                endpoint=endpoint,
+                data=json.dumps(data)
+            )
+
+            for item in response.results:
+                yield item
+
+            has_more = response.has_more
+            cursor = response.next_cursor
+
+    def get_iterate(self, endpoint, params={}):
+        has_more = True
+        cursor = None
+
+        while has_more:
+            params.update({
+                'start_cursor': cursor,
+                'page_size': 100
+            })
+
+            if cursor is None:
+                params.pop('start_cursor')
+
+            response = self.get(
+                endpoint=endpoint,
+                params=params
+            )
+
+            for item in response.results:
+                yield item
+
+            has_more = response.has_more
+            cursor = response.next_cursor
+
+    def patch(self, endpoint, params={}, data={}, cast_cls=NotionObject):
         return self.request(
             request_type='patch',
             endpoint=endpoint,
             params=params,
             data=data,
+            cast_cls=cast_cls,
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -221,6 +283,5 @@ if __name__ == '__main__':
     api = NotionAPI(access_token=token)
     db = api.get_database('af4a974eda13475d820580d84a71cf4c')
     page = next(db.query())
-    page._read_property("Link")
-
     breakpoint()
+    print(page._read_property("Link").all())

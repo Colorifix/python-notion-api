@@ -8,132 +8,161 @@ from notion_integration.api.models.fields import (
 from notion_integration.api.models.objects import (
     SelectObject, FormulaConfigurationObject,
     RelationConfigurationObject,
-    RollupConfigurationObject
+    RollupConfigurationObject,
+    NotionObjectBase
 )
 
 EmptyField = Optional[Dict]
 
-config_map = {
-    "title": "TitlePropertyConfiguration",
-    "rich_text": "TextPropertyConfiguration",
-    "number": "NumberPropertyConfiguration",
-    "select": "SelectPropertyConfiguration",
-    "multi_select": "MultiSelectPropertyConfiguration",
-    "date": "DatePropertyConfiguration",
-    "people": "PeoplePropertyConfiguration",
-    "files": "FilesPropertyConfiguration",
-    "checkbox": "CheckBoxPropertyConfiguration",
-    "url": "URLPropertyConfiguration",
-    "email": "EmailPropertyConfiguration",
-    "phone_number": "PhoneNumberPropertyConfiguration",
-    "formula": "FormulaPropertyConfiguration",
-    "relation": "RelationPropertyConfiguration",
-    "rollup": "RollupPropertyConfiguration",
-    "created_time": "CreatedTimePropertyConfiguration",
-    "created_by": "CreatedByPropertyConfiguration",
-    "last_edited_time": "LastEditedTimePropertyConfiguration",
-    "last_edited_by": "LastEditedTimePropertyConfiguration",
-    "status": "StatusPropertyConfiguration"
-}
 
-
-class NotionPropertyConfiguration(BaseModel):
+class NotionPropertyConfiguration(NotionObjectBase):
     config_id: str = idField
     config_type: str = typeField
     name: str
 
-    @classmethod
-    def from_obj(cls, obj):
-        for config_key, config_class_name in config_map.items():
-            if config_key in obj:
-                config_cls = cls._get_config_cls(config_class_name)
-                if config_cls is None:
-                    raise ValueError(f"{config_class_name} is unknown")
-                return config_cls(**obj)
+    _class_map = {
+        "title": "TitlePropertyConfiguration",
+        "rich_text": "TextPropertyConfiguration",
+        "number": "NumberPropertyConfiguration",
+        "select": "SelectPropertyConfiguration",
+        "multi_select": "MultiSelectPropertyConfiguration",
+        "date": "DatePropertyConfiguration",
+        "people": "PeoplePropertyConfiguration",
+        "files": "FilesPropertyConfiguration",
+        "checkbox": "CheckBoxPropertyConfiguration",
+        "url": "URLPropertyConfiguration",
+        "email": "EmailPropertyConfiguration",
+        "phone_number": "PhoneNumberPropertyConfiguration",
+        "formula": "FormulaPropertyConfiguration",
+        "relation": "RelationPropertyConfiguration",
+        "rollup": "RollupPropertyConfiguration",
+        "created_time": "CreatedTimePropertyConfiguration",
+        "created_by": "CreatedByPropertyConfiguration",
+        "last_edited_time": "LastEditedTimePropertyConfiguration",
+        "last_edited_by": "LastEditedTimePropertyConfiguration",
+        "status": "StatusPropertyConfiguration"
+    }
 
-    @staticmethod
-    def _get_config_cls(cls_name):
-        return next((
-            cls for cls in NotionPropertyConfiguration.__subclasses__()
-            if cls.__name__ == cls_name
-        ), None)
+    @property
+    def _class_key_field(self):
+        return self.config_type
 
 
 class TitlePropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     title: EmptyField
 
 
 class TextPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     rich_text: EmptyField
 
 
 class NumberPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     number_format: Optional[str] = Field(alias="format", default='')
 
 
 class SelectPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     options: Optional[List[SelectObject]] = []
 
 
 class StatusPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     staus: EmptyField
 
 
 class MultiSelectPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     options: Optional[List[SelectObject]] = []
 
 
 class DatePropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     date: EmptyField
 
 
 class PeoplePropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     people: EmptyField
 
 
 class FilesPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     files: EmptyField
 
 
 class CheckBoxPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     checkbox: EmptyField
 
 
 class URLPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     url: EmptyField
 
 
 class EmailPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     email: EmptyField
 
 
 class PhoneNumberPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     phone_number: EmptyField
 
 
 class FormulaPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     formula: FormulaConfigurationObject
 
 
 class RelationPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     relation: RelationConfigurationObject
 
 
 class RollupPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     rollup: RollupConfigurationObject
 
 
 class CreatedTimePropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     created_time: EmptyField
 
 
 class CreatedByPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     created_by: EmptyField
 
 
 class LastEditedTimePropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     last_edited_time: EmptyField
 
 
 class LastEditedByPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
     last_edited_by: EmptyField

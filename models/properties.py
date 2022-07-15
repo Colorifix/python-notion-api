@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Extra, ValidationError
-from typing import Optional, Literal, List, Dict, ClassVar, Callable
+from typing import Optional, List, Dict
 
 from notion_integration.api.models.fields import (
-    idField, typeField, objectField
+    idField, typeField
 )
 
 from notion_integration.api.models.objects import (
@@ -14,74 +13,14 @@ from notion_integration.api.models.objects import (
     PageReferenceObject,
     RollupObject,
     StatusObject,
-    FileReferenceObject
+    FileReferenceObject,
+    NotionObject,
+    Pagination
 )
 
 
-def get_derived_class(self, base_class, derived_cass_name):
-    return next((
-        cls for cls in base_class.__subclasses__()
-        if cls.__name__ == derived_cass_name
-    ), None)
-
-
-class NotionObjectBase(BaseModel):
-    _class_map: Optional[ClassVar[Dict[str, str]]]
-
-    @classmethod
-    def from_obj(cls, obj):
-        temp_obj = cls(obj)
-        class_key_value = temp_obj._class_key_field
-        if class_key_value is None:
-            raise ValueError(
-                f"Given object does not have a {cls._class_key_field} field"
-            )
-
-        class_name = cls._class_map.get(class_key_value, None)
-        if class_name is None:
-            raise ValueError(
-                f"Unknown object {cls._class_key_field}: '{class_key_value}'"
-            )
-
-        derived_cls = get_derived_class(cls, class_name)
-
-        if derived_cls._class_key_field is not None:
-            return derived_cls.from_obj(obj)
-
-
-class NotionObject(NotionObjectBase, extra=Extra.allow):
-    notion_object: str = objectField
-
-    _class_map = {
-        "list": "Pagination",
-        "property_item": "PropetyItem"
-    }
-
-    @property
-    def _class_key_field(self):
-        return self.notion_object
-
-
-class Pagination(NotionObject):
-    has_more: bool
-    next_cursor: str
-    results: List
-    pagination_type: Literal[
-        "block", "page", "user", "database", "property_item",
-        "page_or_database"
-    ] = typeField
-
-    _class_map = {
-        "property_item": "PropertyItemPagination"
-    }
-
-    @property
-    def _class_key_field(self):
-        return self.pagination_type
-
-
 class PropertyItemPagination(Pagination):
-    pagination_item: Dict
+    property_item: Dict
 
     _class_map = {
         "rich_text": "RichTextPagination",
@@ -92,7 +31,7 @@ class PropertyItemPagination(Pagination):
 
     @property
     def _class_key_field(self):
-        return self.pagination_item['type']
+        return self.property_item['type']
 
 
 class PropertyItem(NotionObject):
@@ -125,6 +64,8 @@ class PropertyItem(NotionObject):
 
 
 class TitlePropertyItem(PropertyItem):
+    _class_key_field = None
+
     title: List[RichTextObject]
 
     @property
@@ -133,22 +74,30 @@ class TitlePropertyItem(PropertyItem):
 
 
 class TitlePagination(PropertyItemPagination):
+    _class_key_field = None
+
     results: List[TitlePropertyItem]
 
 
 class RichTextPropertyItem(PropertyItem):
+    _class_key_field = None
+
     rich_text: RichTextObject
 
     @property
     def value(self):
-        return "".join([rto.plain_text for rto in self.rich_text])
+        return self.rich_text.plain_text
 
 
 class RichTextPagination(PropertyItemPagination):
+    _class_key_field = None
+
     results: List[RichTextPropertyItem]
 
 
 class NumberPropertyItem(PropertyItem):
+    _class_key_field = None
+
     number: float
 
     @property
@@ -157,6 +106,8 @@ class NumberPropertyItem(PropertyItem):
 
 
 class SelectPropertyItem(PropertyItem):
+    _class_key_field = None
+
     select: SelectObject
 
     @property
@@ -165,6 +116,8 @@ class SelectPropertyItem(PropertyItem):
 
 
 class StatusPropertyItem(PropertyItem):
+    _class_key_field = None
+
     status: StatusObject
 
     @property
@@ -173,6 +126,8 @@ class StatusPropertyItem(PropertyItem):
 
 
 class MultiSelectPropertyItem(PropertyItem):
+    _class_key_field = None
+
     multi_select: List[SelectObject]
 
     @property
@@ -181,6 +136,8 @@ class MultiSelectPropertyItem(PropertyItem):
 
 
 class DatePropertyItem(PropertyItem):
+    _class_key_field = None
+
     date: DatePropertyValueObject
 
     @property
@@ -189,6 +146,8 @@ class DatePropertyItem(PropertyItem):
 
 
 class FormulaPropertyItem(PropertyItem):
+    _class_key_field = None
+
     formula: FormulaObject
 
     @property
@@ -197,6 +156,8 @@ class FormulaPropertyItem(PropertyItem):
 
 
 class RelationPropertyItem(PropertyItem):
+    _class_key_field = None
+
     relation: PageReferenceObject
 
     @property
@@ -205,10 +166,14 @@ class RelationPropertyItem(PropertyItem):
 
 
 class RelationPagination(PropertyItemPagination):
+    _class_key_field = None
+
     results: List[RelationPropertyItem]
 
 
 class RollupPropertyItem(PropertyItem):
+    _class_key_field = None
+
     rollup: RollupObject
 
     @property
@@ -217,6 +182,8 @@ class RollupPropertyItem(PropertyItem):
 
 
 class PeoplePropertyItem(PropertyItem):
+    _class_key_field = None
+
     people: UserObject
 
     @property
@@ -225,10 +192,14 @@ class PeoplePropertyItem(PropertyItem):
 
 
 class PeoplePagination(PropertyItemPagination):
+    _class_key_field = None
+
     results: List[RelationPropertyItem]
 
 
 class FilesPropertyItem(PropertyItem):
+    _class_key_field = None
+
     files: List[FileReferenceObject]
 
     @property
@@ -237,6 +208,8 @@ class FilesPropertyItem(PropertyItem):
 
 
 class CheckBoxPropertyItem(PropertyItem):
+    _class_key_field = None
+
     checkbox: bool
 
     @property
@@ -245,6 +218,8 @@ class CheckBoxPropertyItem(PropertyItem):
 
 
 class URLPropertyItem(PropertyItem):
+    _class_key_field = None
+
     url: str
 
     @property
@@ -253,6 +228,8 @@ class URLPropertyItem(PropertyItem):
 
 
 class EmailPropertyItem(PropertyItem):
+    _class_key_field = None
+
     email: str
 
     @property
@@ -261,6 +238,8 @@ class EmailPropertyItem(PropertyItem):
 
 
 class PhoneNumberPropertyItem(PropertyItem):
+    _class_key_field = None
+
     phone_number: str
 
     @property
@@ -269,6 +248,8 @@ class PhoneNumberPropertyItem(PropertyItem):
 
 
 class CreatedTimePropertyItem(PropertyItem):
+    _class_key_field = None
+
     created_time: str
 
     @property
@@ -277,6 +258,8 @@ class CreatedTimePropertyItem(PropertyItem):
 
 
 class CreatedByPropertyItem(PropertyItem):
+    _class_key_field = None
+
     created_by: UserObject
 
     @property
@@ -285,6 +268,8 @@ class CreatedByPropertyItem(PropertyItem):
 
 
 class LastEditedTimePropertyItem(PropertyItem):
+    _class_key_field = None
+
     last_edited_time: str
 
     @property
@@ -293,6 +278,8 @@ class LastEditedTimePropertyItem(PropertyItem):
 
 
 class LastEditedByPropertyItem(PropertyItem):
+    _class_key_field = None
+
     last_edited_by: UserObject
 
     @property
