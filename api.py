@@ -1,4 +1,8 @@
-import requests
+from requests import Session
+from requests.adapters import HTTPAdapter
+
+from requests.packages.urllib3.util.retry import Retry
+
 import logging
 import json
 
@@ -30,7 +34,7 @@ from notion_integration.api.models.iterators import (
 )
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 
 class NotionPage:
@@ -115,11 +119,12 @@ class NotionPage:
         for prop_name in self._object.properties:
             prop = self.get(prop_name)
 
-            if isinstance(prop, PropertyItemIterator):
-                if (not include_rels) and isinstance(
-                        prop, RelationPropertyItemIterator):
-                    continue
-                vals[prop_name] = prop.all()
+            if isinstance(prop, RelationPropertyItemIterator):
+                if include_rels:
+                    vals[prop_name] = prop.all()
+            elif isinstance(prop, PropertyItemIterator):
+                if not rels_only:
+                    vals[prop_name] = prop.all()
             else:
                 if not rels_only:
                     vals[prop_name] = prop.value
@@ -172,10 +177,22 @@ class NotionAPI:
         self.access_token = access_token
         self.base_url = "https://api.notion.com/v1/"
 
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "OPTIONS"]
+        )
+
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.http = Session()
+
+        self.http.mount("https://", adapter)
+        self.http.mount("http://", adapter)
+
     def request(self, request_type, endpoint='', params={}, data=None,
                 headers={}, url=None, attempt=0, cast_cls=NotionObject):
         url = url or self.base_url + endpoint
-        request = getattr(requests, request_type)
+        request = getattr(self.http, request_type)
 
         headers.update(
             {
