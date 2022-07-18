@@ -1,5 +1,7 @@
 from typing import Optional, List, Dict
 
+from pydantic import Field
+
 from notion_integration.api.models.fields import (
     idField, typeField
 )
@@ -26,7 +28,7 @@ class PropertyItemPagination(Pagination):
         "rich_text": "RichTextPagination",
         "title": "TitlePagination",
         "people": "PeoplePagination",
-        "relationships": "RelationshipsPagination"
+        "relation": "RelationPagination"
     }
 
     @property
@@ -40,22 +42,22 @@ class PropertyItem(NotionObject):
     next_url: Optional[str]
 
     _class_map = {
-        "number": "NumberProperty",
-        "select": "SelectProperty",
-        "multi_select": "MultiSelectProperty",
-        "status": "StatusProperty",
-        "date": "DateProperty",
-        "formula": "FormulaProperty",
-        "rollup": "RollupProperty",
-        "files": "FilesProperty",
-        "checkbox": "CheckBoxProperty",
-        "url": "URLProperty",
-        "email": "EmailProperty",
-        "phone_number": "PhoneNumberProperty",
-        "created_time": "CreatedTimeProperty",
-        "created_by": "CreatedByProperty",
-        "last_edited_time": "LastEditedTimeProperty",
-        "last_edited_by": "LastEditedByProperty"
+        "number": "NumberPropertyItem",
+        "select": "SelectPropertyItem",
+        "multi_select": "MultiSelectPropertyItem",
+        "status": "StatusPropertyItem",
+        "date": "DatePropertyItem",
+        "formula": "FormulaPropertyItem",
+        "rollup": "RollupPropertyItem",
+        "files": "FilesPropertyItem",
+        "checkbox": "CheckBoxPropertyItem",
+        "url": "URLPropertyItem",
+        "email": "EmailPropertyItem",
+        "phone_number": "PhoneNumberPropertyItem",
+        "created_time": "CreatedTimePropertyItem",
+        "created_by": "CreatedByPropertyItem",
+        "last_edited_time": "LastEditedTimePropertyItem",
+        "last_edited_by": "LastEditedByPropertyItem"
     }
 
     @property
@@ -66,11 +68,11 @@ class PropertyItem(NotionObject):
 class TitlePropertyItem(PropertyItem):
     _class_key_field = None
 
-    title: List[RichTextObject]
+    title: RichTextObject
 
     @property
     def value(self):
-        return "".join([rto.plain_text for rto in self.title])
+        return self.title.plain_text
 
 
 class TitlePagination(PropertyItemPagination):
@@ -98,31 +100,39 @@ class RichTextPagination(PropertyItemPagination):
 class NumberPropertyItem(PropertyItem):
     _class_key_field = None
 
-    number: float
+    number: Optional[float] = Field(...)
 
     @property
     def value(self):
         return self.number
 
+    def set_value(self, value: float):
+        self.number = value
+
 
 class SelectPropertyItem(PropertyItem):
     _class_key_field = None
 
-    select: SelectObject
+    select: Optional[SelectObject] = Field(...)
 
     @property
     def value(self):
-        return self.select.name
+        if self.select is not None:
+            return self.select.name
+
+    def set_value(self, value: float):
+        self.select = SelectObject(name=value)
 
 
 class StatusPropertyItem(PropertyItem):
     _class_key_field = None
 
-    status: StatusObject
+    status: Optional[StatusObject] = Field(...)
 
     @property
     def value(self):
-        return self.status.name
+        if self.status is not None:
+            return self.status.name
 
 
 class MultiSelectPropertyItem(PropertyItem):
@@ -138,17 +148,18 @@ class MultiSelectPropertyItem(PropertyItem):
 class DatePropertyItem(PropertyItem):
     _class_key_field = None
 
-    date: DatePropertyValueObject
+    date: Optional[DatePropertyValueObject] = Field(...)
 
     @property
     def value(self):
-        return self.date.start
+        if self.date is not None:
+            return self.date.start
 
 
 class FormulaPropertyItem(PropertyItem):
     _class_key_field = None
 
-    formula: FormulaObject
+    formula: Optional[FormulaObject] = Field(...)
 
     @property
     def value(self):
@@ -158,11 +169,11 @@ class FormulaPropertyItem(PropertyItem):
 class RelationPropertyItem(PropertyItem):
     _class_key_field = None
 
-    relation: PageReferenceObject
+    relation: Optional[PageReferenceObject] = Field(...)
 
     @property
     def value(self):
-        return [pr.page_id for pr in self.relation]
+        return self.relation.page_id
 
 
 class RelationPagination(PropertyItemPagination):
@@ -171,14 +182,14 @@ class RelationPagination(PropertyItemPagination):
     results: List[RelationPropertyItem]
 
 
-class RollupPropertyItem(PropertyItem):
-    _class_key_field = None
+# class RollupPropertyItem(PropertyItem):
+#     _class_key_field = None
 
-    rollup: RollupObject
+#     rollup: RollupObject
 
-    @property
-    def value(self):
-        return ''
+#     @property
+#     def value(self):
+#         return ''
 
 
 class PeoplePropertyItem(PropertyItem):
@@ -188,13 +199,13 @@ class PeoplePropertyItem(PropertyItem):
 
     @property
     def value(self):
-        return [p.name for p in self.people]
+        return self.people.name
 
 
 class PeoplePagination(PropertyItemPagination):
     _class_key_field = None
 
-    results: List[RelationPropertyItem]
+    results: List[PeoplePropertyItem]
 
 
 class FilesPropertyItem(PropertyItem):
@@ -204,13 +215,13 @@ class FilesPropertyItem(PropertyItem):
 
     @property
     def value(self):
-        return [file.value for file in self.files] 
+        return [file.value for file in self.files]
 
 
 class CheckBoxPropertyItem(PropertyItem):
     _class_key_field = None
 
-    checkbox: bool
+    checkbox: Optional[bool] = Field(...)
 
     @property
     def value(self):
@@ -220,7 +231,7 @@ class CheckBoxPropertyItem(PropertyItem):
 class URLPropertyItem(PropertyItem):
     _class_key_field = None
 
-    url: str
+    url: Optional[str] = Field(...)
 
     @property
     def value(self):
@@ -230,7 +241,7 @@ class URLPropertyItem(PropertyItem):
 class EmailPropertyItem(PropertyItem):
     _class_key_field = None
 
-    email: str
+    email: Optional[str] = Field(...)
 
     @property
     def value(self):
@@ -240,7 +251,7 @@ class EmailPropertyItem(PropertyItem):
 class PhoneNumberPropertyItem(PropertyItem):
     _class_key_field = None
 
-    phone_number: str
+    phone_number: Optional[str] = Field(...)
 
     @property
     def value(self):

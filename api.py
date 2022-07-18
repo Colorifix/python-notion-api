@@ -2,45 +2,35 @@ import requests
 import logging
 import json
 
+from pprint import pprint
+
+from typing import Union, Any
+
 from notion_integration.api.models.objects import (
     Database,
     Pagination
 )
 
 from notion_integration.api.models.properties import (
+     PropertyItem,
      NotionObject,
      PropertyItemPagination,
      RichTextPagination,
      TitlePagination
 )
+
 from notion_integration.api.models.configurations import (
     RelationPropertyConfiguration,
     NotionPropertyConfiguration
 )
 
+from notion_integration.api.models.iterators import (
+    PropertyItemIterator,
+    RelationPropertyItemIterator
+)
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
-
-class PropertyItemIterator:
-    def __init__(self, generator):
-        self.generator = generator
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.generator).value
-
-
-class StringPropertyItemIterator(PropertyItemIterator):
-    def all(self):
-        return "".join([item.value for item in self.generator])
-
-
-class ListPropertyItemIterator(PropertyItemIterator):
-    def all(self):
-        return [item.value for item in self.generator]
 
 
 class NotionPage:
@@ -54,7 +44,7 @@ class NotionPage:
         if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
 
-    def _read_property(self, prop_name):
+    def get(self, prop_name: str) -> Union[PropertyItemIterator, PropertyItem]:
         if prop_name in self._object.properties:
             prop_id = self._object.properties[prop_name].property_id
             ret = self.api.get(
@@ -65,57 +55,78 @@ class NotionPage:
                     endpoint=f'pages/{self.page_id}/properties/{prop_id}'
                 )
 
-                if (
-                    isinstance(ret, TitlePagination) or
-                    isinstance(ret, RichTextPagination)
-                ):
-                    return StringPropertyItemIterator(generator)
-                else:
-                    return ListPropertyItemIterator(generator)
+                parent_id = self.parent.database_id
+                parent_db = self.api.get_database(parent_id)
+
+                prop_type = parent_db.properties[prop_name].config_type
+
+                iterator = PropertyItemIterator.from_generator(
+                    generator,
+                    prop_type
+                )
+
+                return iterator
+
+            elif isinstance(ret, PropertyItem):
+                return ret
             else:
-                return ret.value
+                raise TypeError("Returned property is of an unknown type")
 
-    # @property
-    # def properties(self):
-    #     if self._properties is None:
-    #         self.reload()
-    #     return self._properties
+    def set(self, prop_name: str, value: Any):
+        if prop_name in self._object.properties:
+            prop_id = self._object.properties[prop_name].property_id
+            ret = self.api.get(
+                endpoint=f'pages/{self.page_id}/properties/{prop_id}'
+            )
+            if hasattr(ret, "set_value"):
+                ret.set_value(value)
+                data = {
+                    'properties': {
+                        prop_name: ret.dict(
+                            exclude={
+                                'notion_object',
+                                'next_url',
+                                'propety_type',
+                                'property_id'
+                            }
+                        )
+                    }
+                }
+                self.api.patch(
+                    endpoint=f'pages/{self.page_id}',
+                    data=json.dumps(data)
+                )
+            else:
+                raise ValueError(
+                    "API does not support setting {ret.__class__}"
+                    " properties at the moment."
+                )
 
-    # def to_dict(self, include_rels=True):
-    #     if include_rels is True:
-    #         return {
-    #             key: val.value for key, val in self.properties.items()
-    #         }
-    #     else:
-    #         return {
-    #             key: val.value for key, val in self.properties.items()
-    #             if not isinstance(val, RelationProperty)
-    #         }
+    @property
+    def properties(self):
+        props = {}
+        for prop_name in self._object.properties:
+            props[prop_name] = self.get(prop_name)
 
-    # def __getattr__(self, key):
-    #     breakpoint()
-    #     prop_key = next(
-    #         (
-    #             pk for pk in self._properties
-    #             if slugify(pk) == key
-    #         ),
-    #         None
-    #     )
+        return props
 
-    #     return self._properties[prop_key]
+    def to_dict(self, include_rels: bool = True, rels_only=False):
+        vals = {}
+        for prop_name in self._object.properties:
+            prop = self.get(prop_name)
 
-    # @property
-    # def last_edited_time(self):
-    #     if self.object is None:
-    #         self.reload()
-    #     return self.object.last_edited_time
+            if isinstance(prop, PropertyItemIterator):
+                if (not include_rels) and isinstance(
+                        prop, RelationPropertyItemIterator):
+                    continue
+                vals[prop_name] = prop.all()
+            else:
+                if not rels_only:
+                    vals[prop_name] = prop.value
+        return vals
 
-    # @property
-    # def relations(self):
-    #     return {
-    #         key: val for key, val in self.properties.items()
-    #         if isinstance(val, RelationProperty)
-    #     }
+    def __getattr__(self, attr_key):
+        return getattr(self._object, attr_key)
 
 
 class NotionDatabase:
@@ -142,7 +153,7 @@ class NotionDatabase:
         for item in self.api.post_iterate(
             endpoint=f'databases/{self.database_id}/query'
         ):
-            yield NotionPage(api=api, page_id=item.page_id)
+            yield NotionPage(api=self.api, page_id=item.page_id)
 
     @property
     def properties(self):
@@ -277,11 +288,17 @@ class NotionAPI:
     def get_database(self, database_id):
         return NotionDatabase(self, database_id)
 
+    def get_page(self, page_id):
+        return NotionPage(self, page_id)
+
 
 if __name__ == '__main__':
     token = "***REMOVED***"
     api = NotionAPI(access_token=token)
-    db = api.get_database('af4a974eda13475d820580d84a71cf4c')
+    db = api.get_database('84ff07f2a274455793742db3bdb61ea8')
     page = next(db.query())
-    breakpoint()
-    print(page._read_property("Link").all())
+    pprint(page.to_dict(include_rels=True))
+    # print(db.properties)
+
+    # page.set('Number', 666)
+

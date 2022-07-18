@@ -1,18 +1,13 @@
 from pydantic import BaseModel, Field, Extra
 from typing import Literal, Optional, Dict, List, Union, ClassVar
 
-from datetime import datetime
+from datetime import datetime, date
 
 from notion_integration.api.models.fields import (
     idField, typeField, objectField
 )
 
-
-def get_derived_class(base_class, derived_cass_name):
-    return next((
-        cls for cls in base_class.__subclasses__()
-        if cls.__name__ == derived_cass_name
-    ), None)
+from notion_integration.api.utils import get_derived_class
 
 
 class NotionObjectBase(BaseModel):
@@ -20,7 +15,11 @@ class NotionObjectBase(BaseModel):
 
     @classmethod
     def from_obj(cls, obj):
-        temp_obj = cls(**obj)
+        try:
+            temp_obj = cls(**obj)
+        except Exception as e:
+            breakpoint()
+            raise e
 
         class_key_value = temp_obj._class_key_field
         if class_key_value is None:
@@ -29,7 +28,7 @@ class NotionObjectBase(BaseModel):
         class_name = cls._class_map.get(class_key_value, None)
         if class_name is None:
             raise ValueError(
-                f"Unknown object"
+                f"Unknown object\n"
                 f"{temp_obj._class_key_field}: '{class_key_value}'"
             )
         derived_cls = get_derived_class(cls, class_name)
@@ -49,7 +48,7 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
 
     _class_map = {
         "list": "Pagination",
-        "property_item": "PropetyItem",
+        "property_item": "PropertyItem",
         "database": "Database",
         "page": "Page"
     }
@@ -174,8 +173,8 @@ class PagePagination(Pagination):
 
 
 class DatePropertyValueObject(BaseModel):
-    start: datetime
-    end: Optional[datetime]
+    start: Union[datetime, date]
+    end: Optional[Union[datetime, date]]
     time_zone: Optional[str]
 
 
