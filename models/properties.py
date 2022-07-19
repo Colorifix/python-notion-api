@@ -6,34 +6,28 @@ from notion_integration.api.models.fields import (
     idField, typeField
 )
 
-from notion_integration.api.models.objects import (
-    UserObject,
-    DatePropertyValueObject,
-    RichTextObject,
-    SelectObject,
-    FormulaObject,
-    PageReferenceObject,
-    RollupObject,
-    StatusObject,
-    FileReferenceObject,
-    NotionObject,
-    Pagination
+from notion_integration.api.models.common import (
+    RichTextObject
 )
 
+from notion_integration.api.models.values import (
+    DatePropertyValue,
+    SelectValue,
+    FormulaValue,
+    PageReferenceValue,
+    RollupValue,
+    StatusValue,
+    FileReferenceValue
+)
 
-class PropertyItemPagination(Pagination):
-    property_item: Dict
+from notion_integration.api.models.objects import (
+    User,
+    NotionObject
+)
 
-    _class_map = {
-        "rich_text": "RichTextPagination",
-        "title": "TitlePagination",
-        "people": "PeoplePagination",
-        "relation": "RelationPagination"
-    }
-
-    @property
-    def _class_key_field(self):
-        return self.property_item['type']
+from notion_integration.api.models.paginations import (
+    PropertyItemPagination
+)
 
 
 class PropertyItem(NotionObject):
@@ -48,7 +42,6 @@ class PropertyItem(NotionObject):
         "status": "StatusPropertyItem",
         "date": "DatePropertyItem",
         "formula": "FormulaPropertyItem",
-        "rollup": "RollupPropertyItem",
         "files": "FilesPropertyItem",
         "checkbox": "CheckBoxPropertyItem",
         "url": "URLPropertyItem",
@@ -113,7 +106,7 @@ class NumberPropertyItem(PropertyItem):
 class SelectPropertyItem(PropertyItem):
     _class_key_field = None
 
-    select: Optional[SelectObject] = Field(...)
+    select: Optional[SelectValue] = Field(...)
 
     @property
     def value(self):
@@ -121,13 +114,13 @@ class SelectPropertyItem(PropertyItem):
             return self.select.name
 
     def set_value(self, value: float):
-        self.select = SelectObject(name=value)
+        self.select = SelectValue(name=value)
 
 
 class StatusPropertyItem(PropertyItem):
     _class_key_field = None
 
-    status: Optional[StatusObject] = Field(...)
+    status: Optional[StatusValue] = Field(...)
 
     @property
     def value(self):
@@ -138,7 +131,7 @@ class StatusPropertyItem(PropertyItem):
 class MultiSelectPropertyItem(PropertyItem):
     _class_key_field = None
 
-    multi_select: List[SelectObject]
+    multi_select: List[SelectValue]
 
     @property
     def value(self):
@@ -148,7 +141,7 @@ class MultiSelectPropertyItem(PropertyItem):
 class DatePropertyItem(PropertyItem):
     _class_key_field = None
 
-    date: Optional[DatePropertyValueObject] = Field(...)
+    date: Optional[DatePropertyValue] = Field(...)
 
     @property
     def value(self):
@@ -159,7 +152,7 @@ class DatePropertyItem(PropertyItem):
 class FormulaPropertyItem(PropertyItem):
     _class_key_field = None
 
-    formula: Optional[FormulaObject] = Field(...)
+    formula: Optional[FormulaValue] = Field(...)
 
     @property
     def value(self):
@@ -169,7 +162,7 @@ class FormulaPropertyItem(PropertyItem):
 class RelationPropertyItem(PropertyItem):
     _class_key_field = None
 
-    relation: Optional[PageReferenceObject] = Field(...)
+    relation: Optional[PageReferenceValue] = Field(...)
 
     @property
     def value(self):
@@ -182,20 +175,26 @@ class RelationPagination(PropertyItemPagination):
     results: List[RelationPropertyItem]
 
 
-# class RollupPropertyItem(PropertyItem):
-#     _class_key_field = None
+class RollupPropertyItem(PropertyItem):
+    _class_key_field = None
 
-#     rollup: RollupObject
+    rollup: RollupValue
 
-#     @property
-#     def value(self):
-#         return ''
+    @property
+    def value(self):
+        return ''
+
+
+class RollupPagination(PropertyItemPagination):
+    _class_key_field = None
+
+    results: List
 
 
 class PeoplePropertyItem(PropertyItem):
     _class_key_field = None
 
-    people: UserObject
+    people: User
 
     @property
     def value(self):
@@ -211,7 +210,7 @@ class PeoplePagination(PropertyItemPagination):
 class FilesPropertyItem(PropertyItem):
     _class_key_field = None
 
-    files: List[FileReferenceObject]
+    files: List[FileReferenceValue]
 
     @property
     def value(self):
@@ -271,7 +270,7 @@ class CreatedTimePropertyItem(PropertyItem):
 class CreatedByPropertyItem(PropertyItem):
     _class_key_field = None
 
-    created_by: UserObject
+    created_by: User
 
     @property
     def value(self):
@@ -291,7 +290,7 @@ class LastEditedTimePropertyItem(PropertyItem):
 class LastEditedByPropertyItem(PropertyItem):
     _class_key_field = None
 
-    last_edited_by: UserObject
+    last_edited_by: User
 
     @property
     def value(self):

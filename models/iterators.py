@@ -7,7 +7,8 @@ class PropertyItemIterator:
         "title": "TitlePropertyItemIterator",
         "rich_text": "RichTextPropertyItemIterator",
         "people": "PeoplePropertyItemIterator",
-        "relation": "RelationPropertyItemIterator"
+        "relation": "RelationPropertyItemIterator",
+        "rollup": "RollupPropertyItemIterator"
     }
 
     def __init__(self, generator):
@@ -60,3 +61,8 @@ class PeoplePropertyItemIterator(PropertyItemIterator):
 class RelationPropertyItemIterator(PropertyItemIterator):
     def all(self):
         return [item.value for item in self.generator]
+
+
+class RollupPropertyItemIterator(PropertyItemIterator):
+    def all(self):
+        return []

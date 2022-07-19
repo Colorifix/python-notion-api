@@ -2,15 +2,11 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 
 from notion_integration.api.models.fields import (
-    idField, typeField, formatField
+    idField, typeField
 )
 
-from notion_integration.api.models.objects import (
-    SelectObject, FormulaConfigurationObject,
-    RelationConfigurationObject,
-    RollupConfigurationObject,
-    NotionObjectBase
-)
+from notion_integration.api.models.objects import NotionObjectBase
+from notion_integration.api.models.values import SelectValue
 
 EmptyField = Optional[Dict]
 
@@ -69,7 +65,7 @@ class NumberPropertyConfiguration(NotionPropertyConfiguration):
 class SelectPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    options: Optional[List[SelectObject]] = []
+    options: Optional[List[SelectValue]] = []
 
 
 class StatusPropertyConfiguration(NotionPropertyConfiguration):
@@ -81,7 +77,7 @@ class StatusPropertyConfiguration(NotionPropertyConfiguration):
 class MultiSelectPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    options: Optional[List[SelectObject]] = []
+    options: Optional[List[SelectValue]] = []
 
 
 class DatePropertyConfiguration(NotionPropertyConfiguration):
@@ -126,16 +122,34 @@ class PhoneNumberPropertyConfiguration(NotionPropertyConfiguration):
     phone_number: EmptyField
 
 
+class FormulaConfigurationObject(BaseModel):
+    expression: str
+
+
 class FormulaPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
     formula: FormulaConfigurationObject
 
 
+class RelationConfigurationObject(BaseModel):
+    database_id: str
+    synced_property_name: Optional[str]
+    synced_property_id: Optional[str]
+
+
 class RelationPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
     relation: RelationConfigurationObject
+
+
+class RollupConfigurationObject(BaseModel):
+    relation_property_name: str
+    relation_property_id: str
+    rollup_property_name: str
+    rollup_property_id: str
+    function: str
 
 
 class RollupPropertyConfiguration(NotionPropertyConfiguration):

@@ -6,21 +6,17 @@ from requests.packages.urllib3.util.retry import Retry
 import logging
 import json
 
-from pprint import pprint
-
-from typing import Union, Any
+from typing import Union, Any, Literal, Dict, Optional, Type
 
 from notion_integration.api.models.objects import (
     Database,
-    Pagination
+    Pagination,
+    NotionObjectBase
 )
 
 from notion_integration.api.models.properties import (
      PropertyItem,
-     NotionObject,
-     PropertyItemPagination,
-     RichTextPagination,
-     TitlePagination
+     NotionObject
 )
 
 from notion_integration.api.models.configurations import (
@@ -34,7 +30,6 @@ from notion_integration.api.models.iterators import (
 )
 
 log = logging.getLogger(__name__)
-# logging.basicConfig(level=logging.INFO)
 
 
 class NotionPage:
@@ -173,9 +168,14 @@ class NotionDatabase:
 
 
 class NotionAPI:
-    def __init__(self, access_token):
-        self.access_token = access_token
-        self.base_url = "https://api.notion.com/v1/"
+    """Main class for Notion API wrapper.
+
+    Args:
+        access_token: Notion access token
+    """
+    def __init__(self, access_token: str):
+        self._access_token = access_token
+        self._base_url = "https://api.notion.com/v1/"
 
         retry_strategy = Retry(
             total=3,
@@ -184,19 +184,38 @@ class NotionAPI:
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.http = Session()
+        self._http = Session()
 
-        self.http.mount("https://", adapter)
-        self.http.mount("http://", adapter)
+        self._http.mount("https://", adapter)
+        self._http.mount("http://", adapter)
 
-    def request(self, request_type, endpoint='', params={}, data=None,
-                headers={}, url=None, attempt=0, cast_cls=NotionObject):
-        url = url or self.base_url + endpoint
-        request = getattr(self.http, request_type)
+    def _request(
+            self, request_type: Literal['get', 'post', 'patch'],
+            endpoint: str = '',
+            params: Dict[str, Any] = {},
+            data: Optional[str] = None,
+            headers: Dict[str, str] = {},
+            cast_cls: Type[NotionObjectBase] = NotionObject):
+        """Main request handler.
+
+        Should not be called directly, for internal use only.
+
+        Args:
+            request_type: Type of the http request to make.
+            endpoint: Endpoint of the request. Will be prepened with the
+                notion API base url.
+            params: Params to pass to the request.
+            data: Data to pass to the request.
+            headers: Additional headers to pass with the request.
+            cast_cls: A NotionObjectBase class to auto-cast the response of the
+                request to.
+        """
+        url = self._base_url + endpoint
+        request = getattr(self._http, request_type)
 
         headers.update(
             {
-                'Authorization': f'Bearer {self.access_token}',
+                'Authorization': f'Bearer {self._access_token}',
                 'Notion-Version': '2022-06-28'
             }
         )
@@ -217,7 +236,7 @@ class NotionAPI:
             )
 
     def post(self, endpoint, data=None, params={}, cast_cls=NotionObject):
-        return self.request(
+        return self._request(
             request_type='post',
             endpoint=endpoint,
             data=data,
@@ -230,7 +249,7 @@ class NotionAPI:
         )
 
     def get(self, endpoint, params={}, cast_cls=NotionObject):
-        return self.request(
+        return self._request(
             request_type='get',
             endpoint=endpoint,
             params=params,
@@ -290,7 +309,7 @@ class NotionAPI:
             cursor = response.next_cursor
 
     def patch(self, endpoint, params={}, data={}, cast_cls=NotionObject):
-        return self.request(
+        return self._request(
             request_type='patch',
             endpoint=endpoint,
             params=params,
@@ -307,15 +326,3 @@ class NotionAPI:
 
     def get_page(self, page_id):
         return NotionPage(self, page_id)
-
-
-if __name__ == '__main__':
-    token = "***REMOVED***"
-    api = NotionAPI(access_token=token)
-    db = api.get_database('84ff07f2a274455793742db3bdb61ea8')
-    page = next(db.query())
-    pprint(page.to_dict(include_rels=True))
-    # print(db.properties)
-
-    # page.set('Number', 666)
-
