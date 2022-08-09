@@ -40,10 +40,11 @@ class NotionObjectBase(BaseModel):
                 f"Unknown object\n"
                 f"{temp_obj._class_key_field}: '{class_key_value}'"
             )
+
         derived_cls = get_derived_class(cls, class_name)
 
         if derived_cls is None:
-            raise ValueError(f"Can find {class_name}({cls.__name__})")
+            raise ValueError(f"Cannot find {class_name}({cls.__name__})")
 
         return derived_cls.from_obj(obj)
 

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 from notion_integration.api.models.fields import (
     idField, typeField
@@ -7,6 +7,9 @@ from notion_integration.api.models.fields import (
 
 from notion_integration.api.models.objects import NotionObjectBase
 from notion_integration.api.models.values import SelectValue
+from notion_integration.api.models.properties import PropertyItem
+from notion_integration.api.models.iterators import PropertyItemIterator
+from notion_integration.api.utils import get_derived_class
 
 EmptyField = Optional[Dict]
 
@@ -42,6 +45,28 @@ class NotionPropertyConfiguration(NotionObjectBase):
     @property
     def _class_key_field(self):
         return self.config_type
+
+    def create_property(self, value: Any):
+        # First check for a property
+        class_name = PropertyItem._class_map.get(self.config_type, None)
+
+        if class_name is not None:
+            derived_class = get_derived_class(PropertyItem, class_name)
+        else:
+            # If not a property, may be a pagination
+            class_name = PropertyItemIterator._iterator_map.get(
+                self.config_type, None)
+            if class_name is not None:
+                derived_class = get_derived_class(PropertyItemIterator,
+                                                  class_name)
+            else:
+                raise ValueError(
+                    f"Cannot find property class for {self.__class__}"
+                )
+
+        prop = derived_class.create_new(value)
+
+        return prop
 
 
 class TitlePropertyConfiguration(NotionPropertyConfiguration):

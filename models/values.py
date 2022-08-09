@@ -35,15 +35,15 @@ class DatePropertyValue(BaseModel):
 
 
 class SelectValue(BaseModel):
-    select_id: str = idField
+    select_id: Optional[str] = idField
     name: str
-    color: str
+    color: Optional[str]
 
 
 class StatusValue(BaseModel):
-    status_id: str = idField
+    status_id: Optional[str] = idField
     name: str
-    color: str
+    color: Optional[str]
 
 
 class FormulaValue(BaseModel):
