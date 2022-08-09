@@ -109,7 +109,7 @@ class NotionPage:
                             exclude={
                                 'notion_object',
                                 'next_url',
-                                'propety_type',
+                                'property_type',
                                 'property_id'
                             }
                         )
@@ -121,7 +121,7 @@ class NotionPage:
                 )
             else:
                 raise ValueError(
-                    "API does not support setting {ret.__class__}"
+                    f"API does not support setting {ret.__class__}"
                     " properties at the moment."
                 )
 
@@ -222,6 +222,47 @@ class NotionDatabase:
             key: val for key, val in self._properties.items()
             if isinstance(val, RelationPropertyConfiguration)
         }
+
+    def create_page(self, properties: Dict[str, Any]) -> NotionPage:
+        """ Creates a new page in the Database
+        Updates the new page with the properties.
+        Does not work yet for Status, Files or any of the advanced
+        properties.
+
+        """
+
+        # First create an empty page in the database
+        data = {
+            "parent": {
+                "database_id": self.database_id
+            },
+            'properties': {}
+        }
+        property_configs = self.properties
+        for prop_name, prop_value in properties.items():
+            property_config = property_configs[prop_name]
+            if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
+                if isinstance(prop_value, PropertyItem):
+                    type_ = prop_value.property_type
+                else:
+                    type_ = prop_value.iterator_type
+
+                if type_ != property_config.config_type:
+                    # Have a mismatch between the property type and the
+                    # given item
+                    raise TypeError(f'Item {prop_value.__class__} given as '
+                                    f'the value for property '
+                                    f'{property_config.__class__}')
+                new_prop = prop_value
+            else:
+
+                new_prop = property_config.create_property(prop_value)
+
+            data['properties'][prop_name] = new_prop.get_dict_for_post()
+
+        new_page = self._api._post("pages", data=json.dumps(data))
+
+        return new_page
 
 
 class NotionAPI:

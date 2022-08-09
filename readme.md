@@ -21,6 +21,19 @@ for page in database.query():
     ...
 ```
 
+You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `notion_integration.api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
+E.g.
+
+```python
+database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+database.create_page(properties={
+    'Value': 234, 
+    'Select_property': SelectValue(name='select1'),
+    'Checkbox_property': CheckBoxPropertyItem(checkbox=True)
+})
+```
+
 ## Notion page
 
 The following actions are supported for pages:
