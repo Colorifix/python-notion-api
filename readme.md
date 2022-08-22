@@ -11,17 +11,32 @@ api = NotionAPI(
 ## Notion Database
 
 Currently only **Retrieve a database** action is fully supported. Querying is
-supported buy without filtering and sorting.
+supported, with filtering and sorting.
 
+For filtering and sorting the input json object can be of [this format](https://developers.notion.com/reference/post-database-query-filter) for filtering and [this format](https://developers.notion.com/reference/post-database-query-sort) for sorting.
+
+The is a `create_filter` method available in the NotionDatabase class for generating the correct filter format. Not all property formats are yet supported. Multiple properties will result in an AND filter. OR filters are not supported.
+
+Filter properties are set such that the column name as the key and the set of query type and property as the value. Example below:
 
 ```python
 database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
-for page in database.query():
+sort_filter = database.create_filter(
+    properties={
+        "Value": ("equals", 12),
+        "Select_property": ("equals", "select1"),
+        "Name": ("contains", "Test")
+    }
+)
+
+for page in database.query(sort_filter):
     ...
 ```
 
-You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `notion_integration.api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
+You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). 
+
+The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `notion_integration.api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
 E.g.
 
 ```python
@@ -67,3 +82,7 @@ page.get('Relation property').all()
 for value in page.get('Relation property'):
     print(value)
 ```
+
+## Problems with rollups and formulas
+These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect. 
+There is no error or warning when this occurs, so be careful!

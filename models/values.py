@@ -48,6 +48,10 @@ class StatusValue(BaseModel):
 
 class FormulaValue(BaseModel):
     formula_type: str = typeField
+    string: Optional[str]
+    number: Optional[float]
+    date: Optional[datetime]
+    boolean: Optional[bool]
 
 
 class PageReferenceValue(BaseModel):

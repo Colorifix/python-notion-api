@@ -70,7 +70,8 @@ class PropertyItem(NotionObject, PropertyItemAbstract):
         "created_time": "CreatedTimePropertyItem",
         "created_by": "CreatedByPropertyItem",
         "last_edited_time": "LastEditedTimePropertyItem",
-        "last_edited_by": "LastEditedByPropertyItem"
+        "last_edited_by": "LastEditedByPropertyItem",
+        "people": "PeoplePropertyItem"
     }
 
     @property
@@ -85,6 +86,9 @@ class PropertyItem(NotionObject, PropertyItemAbstract):
 
     def get_dict_for_post(self):
         return {self.property_type: self.value}
+
+    def get_dict_for_filter(self, query):
+        return {self.property_type: {query: self.value}}
 
 
 class TitlePropertyItem(PropertyItem):
@@ -134,6 +138,7 @@ class TitlePagination(PropertyItemPagination):
 
 class RichTextPropertyItem(PropertyItem):
     _class_key_field = None
+    property_type = "rich_text"
 
     rich_text: RichTextObject
 
@@ -283,6 +288,9 @@ class MultiSelectPropertyItem(PropertyItem):
         return {"multi_select": [
             {"name": so.name} for so in self.multi_select]}
 
+    def get_dict_for_filter(self, query):
+        return {self.property_type: {query: self.value[0]}}
+
     @classmethod
     def from_simpler_inputs(cls, name: str, color: Optional[str] = None):
         return cls(multi_select=[SelectValue(name=name, color=color)])
@@ -356,7 +364,15 @@ class FormulaPropertyItem(PropertyItem):
 
     @property
     def value(self):
-        return ''
+        return getattr(self.formula, self.formula.formula_type)
+
+    def set_value(self, formula_type: str):
+        self.formula = FormulaValue(formula_type=formula_type)
+
+    @classmethod
+    @pydantic.validate_arguments
+    def create_new(cls, value: str):
+        return cls(formula=FormulaValue(formula_type=value))
 
     def set_value(self, formula_type: str):
         self.formula = FormulaValue(formula_type=formula_type)
@@ -369,6 +385,7 @@ class FormulaPropertyItem(PropertyItem):
 
 class RelationPropertyItem(PropertyItem):
     _class_key_field = None
+    property_type = 'relation'
 
     relation: Optional[PageReferenceValue] = Field(...)
 
@@ -381,7 +398,7 @@ class RelationPropertyItem(PropertyItem):
 
     @classmethod
     @pydantic.validate_arguments
-    def create_new(cls, value: Union[PageReferenceValue, str]):
+    def create_new(cls, value: Union[PageReferenceValue, str]):      
         if isinstance(value, PageReferenceValue):
             return cls(relation=value)
         else:
@@ -396,6 +413,7 @@ class RelationPagination(PropertyItemPagination):
 
 class RollupPropertyItem(PropertyItem):
     _class_key_field = None
+    property_type = "rollup"
 
     rollup: RollupValue
 
@@ -413,6 +431,10 @@ class RollupPagination(PropertyItemPagination):
     _class_key_field = None
 
     results: List
+
+    @property
+    def value(self):
+        return [PropertyItem.from_obj(res).value for res in self.results]
 
 
 class PeoplePropertyItem(PropertyItem):
@@ -615,14 +637,20 @@ class CreatedByPropertyItem(PropertyItem):
     @classmethod
     @pydantic.validate_arguments
     def create_new(
-            cls,
-            value: Union[
-                User, str,
-                Tuple[str, Optional[Literal["person", "bot"]], Optional[str],
-                      Optional[str], Optional[Dict], Optional[str],
-                      Optional[Dict],
-                      Optional[Literal["workspace", "user"]]]
-        ]):
+        cls,
+        value: Union[
+            User, str,
+            Tuple[
+                str,
+                Optional[Literal["person", "bot"]],
+                Optional[str],
+                Optional[str],
+                Optional[Dict],
+                Optional[str],
+                Optional[Dict],
+                Optional[Literal["workspace", "user"]]]
+        ]
+    ):
         """Creates a new CreatedByPropertyItem
         The User object used to construct the item can take many arguments.
         To simplify the options here, you can either provide a User object,

@@ -16,7 +16,8 @@ from notion_integration.api.models.objects import (
 
 from notion_integration.api.models.properties import (
      PropertyItem,
-     NotionObject
+     NotionObject,
+     RollupPagination
 )
 
 from notion_integration.api.models.configurations import (
@@ -26,7 +27,8 @@ from notion_integration.api.models.configurations import (
 
 from notion_integration.api.models.iterators import (
     PropertyItemIterator,
-    RelationPropertyItemIterator
+    RelationPropertyItemIterator,
+    RollupPropertyItemIterator
 )
 
 log = logging.getLogger(__name__)
@@ -67,7 +69,13 @@ class NotionPage:
             ret = self._api._get(
                 endpoint=f'pages/{self._page_id}/properties/{prop_id}'
             )
-            if isinstance(ret, Pagination):
+            if isinstance(ret, RollupPagination):
+                # There are a few types of Rollup properties.
+                # Those of an array type store a list of items in the
+                # results attribute
+                # Need to treat this as a special case
+                return RollupPropertyItemIterator.from_pagination(ret)
+            elif isinstance(ret, Pagination):
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
@@ -93,7 +101,7 @@ class NotionPage:
         """Wrapper for 'Update page' action.
 
         Args:
-            prop_name: Name of the properrty to update
+            prop_name: Name of the property to update
             value: A new value of the property
         """
         if prop_name in self._object.properties:
@@ -105,14 +113,7 @@ class NotionPage:
                 ret.set_value(value)
                 data = {
                     'properties': {
-                        prop_name: ret.dict(
-                            exclude={
-                                'notion_object',
-                                'next_url',
-                                'property_type',
-                                'property_id'
-                            }
-                        )
+                        prop_name: ret.get_dict_for_post()
                     }
                 }
                 self._api._patch(
@@ -138,15 +139,21 @@ class NotionPage:
 
     def to_dict(self,
                 include_rels: bool = True,
-                rels_only=False) -> Dict[str, Union[str, List]]:
+                rels_only=False,
+                properties: Optional[Union[str, List]] = None) \
+            -> Dict[str, Union[str, List]]:
         """Returns all properties of the page as simple values.
 
         Args:
             include_rels: Include relations.
             rels_only: Return relations only.
+            properties: List of properties to return. If None, will
+            get values for all properties.
         """
+        if properties is None:
+            properties = self._object.properties
         vals = {}
-        for prop_name in self._object.properties:
+        for prop_name in properties:
             prop = self.get(prop_name)
 
             if isinstance(prop, RelationPropertyItemIterator):
@@ -191,13 +198,23 @@ class NotionDatabase:
     def database_id(self) -> str:
         return self._database_id
 
-    def query(self) -> Generator[NotionPage, None, None]:
+    def query(self, sort_filter: Optional[Dict[str, Dict]] = {}) -> \
+            Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
         Retrieves all pages belonging to the database.
+
+        Args:
+            sort_filter: dictionary with any filtering and sorting parameters.
+            Should match the formats described here:
+            https://developers.notion.com/reference/post-database-query
+            https://developers.notion.com/reference/post-database-query-filter
+            https://developers.notion.com/reference/post-database-query-sort
+
         """
         for item in self._api._post_iterate(
-            endpoint=f'databases/{self._database_id}/query'
+            endpoint=f'databases/{self._database_id}/query',
+            data=sort_filter
         ):
             yield NotionPage(api=self._api, page_id=item.page_id)
 
@@ -223,15 +240,80 @@ class NotionDatabase:
             if isinstance(val, RelationPropertyConfiguration)
         }
 
-    def create_page(self, properties: Dict[str, Any]) -> NotionPage:
-        """ Creates a new page in the Database
-        Updates the new page with the properties.
-        Does not work yet for Status, Files or any of the advanced
-        properties.
-
+    def get_property(self, prop_config: Any, prop_value: str) -> Any:
+        """Create property for a given property configuration.
         """
 
-        # First create an empty page in the database
+        if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
+            if isinstance(prop_value, PropertyItem):
+                type_ = prop_value.property_type
+            else:
+                type_ = prop_value.iterator_type
+
+            if type_ != prop_config.config_type:
+                # Have a mismatch between the property type and the
+                # given item
+                raise TypeError(f'Item {prop_value.__class__} given as '
+                                f'the value for property '
+                                f'{prop_config.__class__}')
+            new_prop = prop_value
+
+        else:
+            new_prop = prop_config.create_property(prop_value)
+
+        return new_prop
+
+    def create_filter(self, properties):
+        """Create a filter objects in json format. Multiple properties are
+        joined in an AND filter. OR filters are not yet supported.
+        """
+
+        property_configs = self.properties
+
+        filters = []
+
+        for prop_name, (prop_query, prop_value) in properties.items():
+
+            property_config = property_configs[prop_name]
+            new_prop = self.get_property(property_config, prop_value)
+
+            filter_dict = new_prop.get_dict_for_filter(prop_query)
+
+            if not isinstance(filter_dict, list):
+                filter_dict = [filter_dict]
+
+            prop_dict = {"property": prop_name}
+            filter_dict = [prop_dict | filt_dict for filt_dict in filter_dict]
+            filters += filter_dict
+
+        # Single filter
+        if len(filters) == 1:
+            return {"filter": filters[0]}
+
+        # Compound AND filter
+        else:
+            return{
+                "filter": {
+                    "and": filters
+                }
+            }
+
+    def create_page(self, properties: Dict[str, Any],
+                    cover: Optional[str] = None,
+                    ) -> NotionPage:
+        """Creates a new page in the Database and updates the new page with
+        the properties.
+        Status, Files or any of the advanced properties are not yet supported.
+
+        Args:
+            properties: Dictionary of property names and values. Value types
+            will depend on the property type. Can be the raw value
+            (e.g. string, float) or an object (e.g. SelectValue,
+            NumberPropertyItem)
+            cover: URL of an image for the page cover. E.g. a gdrive url.
+        """
+
+        # Create an empty page in the database
         data = {
             "parent": {
                 "database_id": self.database_id
@@ -239,26 +321,21 @@ class NotionDatabase:
             'properties': {}
         }
         property_configs = self.properties
+
         for prop_name, prop_value in properties.items():
+
+            # For each property name get the property configuration
             property_config = property_configs[prop_name]
-            if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
-                if isinstance(prop_value, PropertyItem):
-                    type_ = prop_value.property_type
-                else:
-                    type_ = prop_value.iterator_type
-
-                if type_ != property_config.config_type:
-                    # Have a mismatch between the property type and the
-                    # given item
-                    raise TypeError(f'Item {prop_value.__class__} given as '
-                                    f'the value for property '
-                                    f'{property_config.__class__}')
-                new_prop = prop_value
-            else:
-
-                new_prop = property_config.create_property(prop_value)
-
+            new_prop = self.get_property(property_config, prop_value)
             data['properties'][prop_name] = new_prop.get_dict_for_post()
+
+        if cover is not None:
+            data['cover'] = {
+                "type": "external",
+                "external": {
+                    "url": cover
+                }
+            }
 
         new_page = self._api._post("pages", data=json.dumps(data))
 
@@ -280,7 +357,7 @@ class NotionAPI:
         retry_strategy = Retry(
             total=3,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS"]
+            allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)

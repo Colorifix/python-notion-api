@@ -3,17 +3,20 @@ from notion_integration.api.models.properties import (
     TitlePropertyItem,
     RichTextPropertyItem,
     RelationPropertyItem,
-    RollupValue,
-    PeoplePropertyItem
+    RollupPagination,
+    PeoplePropertyItem,
+    PropertyItem
 )
+from notion_integration.api.models.objects import NotionObject
 from notion_integration.api.models.fields import (
     typeField
 )
-from typing import Optional
+from typing import Optional, Dict, Any
 
 
 class PropertyItemIterator:
-    property_type: Optional[str] = typeField
+
+    iterator_type: Optional[str] = typeField
 
     _iterator_map = {
         "title": "TitlePropertyItemIterator",
@@ -64,6 +67,13 @@ class PropertyItemIterator:
         obj = cls(iter([]))
         obj.set_value(value)
         return obj
+
+    def get_dict_for_filter(self, query):
+        return [
+            {
+                self.iterator_type: {query: item.value}
+            } for item in self.generator
+        ]
 
 
 class TitlePropertyItemIterator(PropertyItemIterator):
@@ -127,7 +137,32 @@ class RollupPropertyItemIterator(PropertyItemIterator):
     iterator_type = 'rollup'
 
     def all(self):
-        return []
+        return [res.value for res in self.generator]
 
-    def set_value(self, rollup_type: str):
-        self.generator = iter([RollupValue(rollup_type=rollup_type)])
+    def set_value(self, results: Dict[str, Any]):
+        self.generator = iter([results])
+
+    @classmethod
+    def from_pagination(cls, rollup: RollupPagination):
+        """
+        There are multiple types of rollup.
+        string, number and date rollups store the result in the rollup
+        attribute.
+        array rollups store the result in the results attribute
+
+        Args:
+            rollup:
+
+        Returns:
+
+        """
+        if rollup.property_item['rollup']['type'] == 'array':
+            results_list = rollup.results
+        else:
+            value = rollup.property_item['rollup']
+            value.update({'object': 'property_item'})
+            results_list = [value]
+
+        return cls(generator=iter([
+            NotionObject.from_obj(r) for r in results_list
+        ]))
