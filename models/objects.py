@@ -113,7 +113,8 @@ class Database(NotionObject):
     title: List[RichTextObject]
     description: List[RichTextObject]
     icon: Optional[Union[FileObject, EmojiObject]]
-    cover: Optional[FileObject]
+    cover: Optional[Union[FileObject,
+                          Dict[str, Union[str, FileObject]]]]
     properties: Dict
     parent: Dict
     url: str
@@ -134,6 +135,7 @@ class Page(NotionObject):
     created_by: User
     last_edited_time: datetime
     last_edited_by: User
-    cover: Optional[FileObject]
+    cover: Optional[Union[FileObject,
+                          Dict[str, Union[str, FileObject]]]]
     properties: Dict[str, PropertyObject]
     parent: ParentObject

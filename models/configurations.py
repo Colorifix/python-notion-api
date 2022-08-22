@@ -63,7 +63,6 @@ class NotionPropertyConfiguration(NotionObjectBase):
                 raise ValueError(
                     f"Cannot find property class for {self.__class__}"
                 )
-
         prop = derived_class.create_new(value)
 
         return prop
