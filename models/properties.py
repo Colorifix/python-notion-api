@@ -87,9 +87,6 @@ class PropertyItem(NotionObject, PropertyItemAbstract):
     def get_dict_for_post(self):
         return {self.property_type: self.value}
 
-    def get_dict_for_filter(self, query):
-        return {self.property_type: {query: self.value}}
-
 
 class TitlePropertyItem(PropertyItem):
     _class_key_field = None
@@ -287,9 +284,6 @@ class MultiSelectPropertyItem(PropertyItem):
     def get_dict_for_post(self):
         return {"multi_select": [
             {"name": so.name} for so in self.multi_select]}
-
-    def get_dict_for_filter(self, query):
-        return {self.property_type: {query: self.value[0]}}
 
     @classmethod
     def from_simpler_inputs(cls, name: str, color: Optional[str] = None):
