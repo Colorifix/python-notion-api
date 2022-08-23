@@ -68,13 +68,6 @@ class PropertyItemIterator:
         obj.set_value(value)
         return obj
 
-    def get_dict_for_filter(self, query):
-        return [
-            {
-                self.iterator_type: {query: item.value}
-            } for item in self.generator
-        ]
-
 
 class TitlePropertyItemIterator(PropertyItemIterator):
     iterator_type = 'title'

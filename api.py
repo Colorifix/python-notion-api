@@ -275,15 +275,12 @@ class NotionDatabase:
         for prop_name, (prop_query, prop_value) in properties.items():
 
             property_config = property_configs[prop_name]
-            new_prop = self.get_property(property_config, prop_value)
-
-            filter_dict = new_prop.get_dict_for_filter(prop_query)
-
-            if not isinstance(filter_dict, list):
-                filter_dict = [filter_dict]
+            filter_dict = {
+                property_config.config_type: {prop_query: prop_value}
+            }
 
             prop_dict = {"property": prop_name}
-            filter_dict = [prop_dict | filt_dict for filt_dict in filter_dict]
+            filter_dict = [prop_dict | filter_dict]
             filters += filter_dict
 
         # Single filter
