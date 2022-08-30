@@ -107,7 +107,7 @@ class TitlePropertyItem(PropertyItem):
 
     def get_dict_for_post(self):
         raise NotImplementedError(
-            f"Function not yet implemented for {self.__name__}"
+            f"Function not yet implemented for {self.__class__.__name__}"
         )
 
     @classmethod
@@ -244,16 +244,7 @@ class StatusPropertyItem(PropertyItem):
         self.status = StatusValue(name=name, color=color, id=status_id)
 
     def get_dict_for_post(self):
-        """
-        As of 03/08/22, the format specified on the Notion documentation
-        does not seem to work.
-        https://developers.notion.com/reference/property-value-object#
-        status-property-values
-        """
-        # return {'status': {'name': self.value}}
-        raise NotImplementedError(
-            f"Function not yet implemented for {self.__name__}"
-        )
+        return {'status': {'name': self.value}}
 
     @classmethod
     @pydantic.validate_arguments
@@ -447,6 +438,11 @@ class PeoplePropertyItem(PropertyItem):
     def from_simpler_inputs(cls, **kwargs):
         return cls(people=User(object='user', **kwargs))
 
+    def get_dict_for_post(self):
+        return {
+            "people": self.people.dict()
+        }
+
     @classmethod
     @pydantic.validate_arguments
     def create_new(cls, value: Union[
@@ -507,16 +503,16 @@ class FilesPropertyItem(PropertyItem):
     @pydantic.validate_arguments
     def create_new(
             cls,
-            value: Union[FileReferenceValue,
-                         Tuple[str, str, Optional[FileObject],
-                               Optional[FileObject]]]
+            value: Union[FileReferenceValue, str]
     ):
         if isinstance(value, FileReferenceValue):
             return cls(files=[value])
         else:
             return cls(files=[FileReferenceValue(
-                reference_type=value[0], name=value[1],
-                external=value[2], file=value[3]
+                type="external", name=value,
+                external={
+                    "url": value
+                }
             )])
 
 

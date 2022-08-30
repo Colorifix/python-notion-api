@@ -70,6 +70,8 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
 
 
 class User(NotionObject):
+    _class_key_field = None
+
     user_id: str = idField
     user_type: Optional[Literal["person", "bot"]] = typeField
     name: Optional[str]

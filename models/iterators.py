@@ -3,20 +3,18 @@ from notion_integration.api.models.properties import (
     TitlePropertyItem,
     RichTextPropertyItem,
     RelationPropertyItem,
-    RollupPagination,
-    PeoplePropertyItem,
-    PropertyItem
+    PeoplePropertyItem
 )
-from notion_integration.api.models.objects import NotionObject
 from notion_integration.api.models.fields import (
-    typeField
+    typeField, idField
 )
 from typing import Optional, Dict, Any
 
 
 class PropertyItemIterator:
 
-    iterator_type: Optional[str] = typeField
+    property_type: Optional[str] = typeField
+    property_id: Optional[str] = idField
 
     _iterator_map = {
         "title": "TitlePropertyItemIterator",
@@ -25,6 +23,10 @@ class PropertyItemIterator:
         "relation": "RelationPropertyItemIterator",
         "rollup": "RollupPropertyItemIterator"
     }
+
+    @property
+    def value(self):
+        return self.all()
 
     def __init__(self, generator):
         self.generator = generator
@@ -134,28 +136,3 @@ class RollupPropertyItemIterator(PropertyItemIterator):
 
     def set_value(self, results: Dict[str, Any]):
         self.generator = iter([results])
-
-    @classmethod
-    def from_pagination(cls, rollup: RollupPagination):
-        """
-        There are multiple types of rollup.
-        string, number and date rollups store the result in the rollup
-        attribute.
-        array rollups store the result in the results attribute
-
-        Args:
-            rollup:
-
-        Returns:
-
-        """
-        if rollup.property_item['rollup']['type'] == 'array':
-            results_list = rollup.results
-        else:
-            value = rollup.property_item['rollup']
-            value.update({'object': 'property_item'})
-            results_list = [value]
-
-        return cls(generator=iter([
-            NotionObject.from_obj(r) for r in results_list
-        ]))

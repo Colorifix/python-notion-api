@@ -11,13 +11,13 @@ from requests.packages.urllib3.util.retry import Retry
 from notion_integration.api.models.objects import (
     Database,
     Pagination,
-    NotionObjectBase
+    NotionObjectBase,
+    User
 )
 
 from notion_integration.api.models.properties import (
      PropertyItem,
-     NotionObject,
-     RollupPagination
+     NotionObject
 )
 
 from notion_integration.api.models.configurations import (
@@ -27,8 +27,7 @@ from notion_integration.api.models.configurations import (
 
 from notion_integration.api.models.iterators import (
     PropertyItemIterator,
-    RelationPropertyItemIterator,
-    RollupPropertyItemIterator
+    RelationPropertyItemIterator
 )
 
 log = logging.getLogger(__name__)
@@ -69,13 +68,8 @@ class NotionPage:
             ret = self._api._get(
                 endpoint=f'pages/{self._page_id}/properties/{prop_id}'
             )
-            if isinstance(ret, RollupPagination):
-                # There are a few types of Rollup properties.
-                # Those of an array type store a list of items in the
-                # results attribute
-                # Need to treat this as a special case
-                return RollupPropertyItemIterator.from_pagination(ret)
-            elif isinstance(ret, Pagination):
+
+            if isinstance(ret, Pagination):
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
@@ -84,10 +78,12 @@ class NotionPage:
                 parent_db = self._api.get_database(parent_id)
 
                 prop_type = parent_db.properties[prop_name].config_type
+                prop_id = parent_db.properties[prop_name].config_id
 
                 iterator = PropertyItemIterator.from_generator(
                     generator,
-                    prop_type
+                    prop_type,
+                    prop_id
                 )
 
                 return iterator
@@ -198,8 +194,11 @@ class NotionDatabase:
     def database_id(self) -> str:
         return self._database_id
 
-    def query(self, sort_filter: Optional[Dict[str, Dict]] = {}) -> \
-            Generator[NotionPage, None, None]:
+    def query(self,
+              filter_properties: Optional[Dict[str, Dict]] = {},
+              sort_properties: Optional[Dict[str, Dict]] = {},
+              or_filter: Optional[bool] = False
+              ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
         Retrieves all pages belonging to the database.
@@ -214,7 +213,12 @@ class NotionDatabase:
         """
         for item in self._api._post_iterate(
             endpoint=f'databases/{self._database_id}/query',
-            data=sort_filter
+            data={
+                'filter': self._create_filter(
+                    filter_properties, or_filter=or_filter
+                ),
+                'sorts': self._create_sorts(sort_properties)
+            }
         ):
             yield NotionPage(api=self._api, page_id=item.page_id)
 
@@ -245,10 +249,7 @@ class NotionDatabase:
         """
 
         if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
-            if isinstance(prop_value, PropertyItem):
-                type_ = prop_value.property_type
-            else:
-                type_ = prop_value.iterator_type
+            type_ = prop_value.property_type
 
             if type_ != prop_config.config_type:
                 # Have a mismatch between the property type and the
@@ -263,7 +264,7 @@ class NotionDatabase:
 
         return new_prop
 
-    def create_filter(self, properties):
+    def _create_filter(self, properties, or_filter):
         """Create a filter objects in json format. Multiple properties are
         joined in an AND filter. OR filters are not yet supported.
         """
@@ -285,15 +286,34 @@ class NotionDatabase:
 
         # Single filter
         if len(filters) == 1:
-            return {"filter": filters[0]}
+            return filters[0]
 
-        # Compound AND filter
+        # Compound filter
         else:
-            return{
-                "filter": {
-                    "and": filters
-                }
+            return {
+                ("or" if or_filter else "and"): filters
             }
+
+    def _create_sorts(self, properties: Dict[str, str]):
+        property_configs = self.properties
+
+        sorts = []
+
+        for prop_name, direction in properties.items():
+            if prop_name not in property_configs:
+                raise NameError(f'Unknown property for sort: "{prop_name}"')
+            if direction != "ascending" and direction != "descending":
+                raise ValueError(
+                    f'Sort direction can be either "ascending" or'
+                    f' "descending", got "{direction}"'
+                )
+            sorts.append(
+                {
+                    "property": prop_name,
+                    "direction": direction
+                }
+            )
+        return sorts
 
     def create_page(self, properties: Dict[str, Any],
                     cover: Optional[str] = None,
@@ -561,3 +581,6 @@ class NotionAPI:
             page_id: Id of the database to fetch.
         """
         return NotionPage(self, page_id)
+
+    def me(self) -> User:
+        return self._get("users/me")

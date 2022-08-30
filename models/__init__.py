@@ -2,7 +2,11 @@ from notion_integration.api.models.fields import (
     typeField,
     idField,
     objectField,
-    formatField
+    formatField,
+    propertyField,
+    filterField,
+    andField,
+    orField
 )
 
 from notion_integration.api.models.common import (
@@ -102,6 +106,10 @@ __all__ = [
     "idField",
     "objectField",
     "formatField",
+    "propertyField",
+    "filterField",
+    "andField",
+    "orField",
 
     "RichTextObject",
     "FileObject",
