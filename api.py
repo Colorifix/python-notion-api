@@ -30,6 +30,8 @@ from notion_integration.api.models.iterators import (
     RelationPropertyItemIterator
 )
 
+from notion_integration.api.models.values import generate_value
+
 log = logging.getLogger(__name__)
 
 
@@ -40,15 +42,20 @@ class NotionPage:
         api: Instance of the NotionAPI.
         page_id: Id of the page.
     """
-    def __init__(self, api, page_id):
+    def __init__(self, api, page_id, database=None):
         self._api = api
         self._page_id = page_id
         self._properties_cache = None
         self._object = None
+        self.database = database
 
         self._object = self._api._get(endpoint=f'pages/{self._page_id}')
         if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
+
+        if database is None:
+            parent_id = self.parent.database_id
+            self.database = self._api.get_database(parent_id)
 
     def __getattr__(self, attr_key):
         return getattr(self._object, attr_key)
@@ -74,11 +81,11 @@ class NotionPage:
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
 
-                parent_id = self.parent.database_id
-                parent_db = self._api.get_database(parent_id)
+                # parent_id = self.parent.database_id
+                # parent_db = self._api.get_database(parent_id)
 
-                prop_type = parent_db.properties[prop_name].config_type
-                prop_id = parent_db.properties[prop_name].config_id
+                prop_type = self.database.properties[prop_name].config_type
+                prop_id = self.database.properties[prop_name].config_id
 
                 iterator = PropertyItemIterator.from_generator(
                     generator,
@@ -101,26 +108,24 @@ class NotionPage:
             value: A new value of the property
         """
         if prop_name in self._object.properties:
-            prop_id = self._object.properties[prop_name].property_id
-            ret = self._api._get(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
-            )
-            if hasattr(ret, "set_value"):
-                ret.set_value(value)
-                data = {
-                    'properties': {
-                        prop_name: ret.get_dict_for_post()
-                    }
+            prop_type = self.database.properties[prop_name].config_type
+
+            value = generate_value(prop_type, value)
+
+            data = {
+                'properties': {
+                    prop_name: value.dict(
+                        exclude={'init'},
+                        by_alias=True,
+                        exclude_unset=True
+                    )
                 }
-                self._api._patch(
-                    endpoint=f'pages/{self._page_id}',
-                    data=json.dumps(data)
-                )
-            else:
-                raise ValueError(
-                    f"API does not support setting {ret.__class__}"
-                    " properties at the moment."
-                )
+            }
+            print(data)
+            self._api._patch(
+                endpoint=f'pages/{self._page_id}',
+                data=json.dumps(data)
+            )
 
     @property
     def properties(self) -> Dict[
@@ -220,7 +225,9 @@ class NotionDatabase:
                 'sorts': self._create_sorts(sort_properties)
             }
         ):
-            yield NotionPage(api=self._api, page_id=item.page_id)
+            yield NotionPage(
+                api=self._api, database=self, page_id=item.page_id
+            )
 
     @property
     def title(self) -> str:
@@ -315,7 +322,7 @@ class NotionDatabase:
             )
         return sorts
 
-    def create_page(self, properties: Dict[str, Any],
+    def create_page(self, properties: Dict[str, Any] = {},
                     cover: Optional[str] = None,
                     ) -> NotionPage:
         """Creates a new page in the Database and updates the new page with
@@ -356,7 +363,11 @@ class NotionDatabase:
 
         new_page = self._api._post("pages", data=json.dumps(data))
 
-        return new_page
+        return NotionPage(
+            api=self._api,
+            page_id=new_page.page_id,
+            database=self
+        )
 
 
 class NotionAPI:

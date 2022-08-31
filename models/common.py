@@ -7,17 +7,28 @@ from notion_integration.api.models.fields import (
 )
 
 
+class TextObject(BaseModel):
+    content: str
+    link: Optional[Dict]
+
+
 class RichTextObject(BaseModel):
     plain_text: str
     href: Optional[str]
     annotations: Optional[Dict]
     rich_text_type: Literal["text", "mention", "equation"] = typeField
+    text: Optional[TextObject]
 
     @classmethod
     def from_str(cls, plain_text: str):
-        return RichTextObject(plain_text=plain_text, href=None,
-                              annotations=dict(),
-                              type='text')
+        text_obj = TextObject(content=plain_text)
+        return RichTextObject(
+            plain_text=plain_text,
+            href=None,
+            annotations=dict(),
+            type='text',
+            text=text_obj
+        )
 
 
 class FileObject(BaseModel):

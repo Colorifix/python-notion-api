@@ -28,8 +28,10 @@ class PropertyItemIterator:
     def value(self):
         return self.all()
 
-    def __init__(self, generator):
+    def __init__(self, generator, property_type, property_id):
         self.generator = generator
+        self.property_type = property_type
+        self.property_id = property_id
 
     def __iter__(self):
         return self
@@ -41,7 +43,7 @@ class PropertyItemIterator:
         return None
 
     @classmethod
-    def from_generator(cls, generator, property_type: str):
+    def from_generator(cls, generator, property_type: str, property_id: str):
         iterator_type_cls_name = cls._iterator_map.get(property_type, None)
 
         if iterator_type_cls_name is None:
@@ -57,7 +59,11 @@ class PropertyItemIterator:
                 f"Failed to locate {iterator_type_cls_name}"
             )
 
-        return iterator_cls(generator)
+        return iterator_cls(
+            generator,
+            property_type,
+            property_id
+        )
 
     @classmethod
     def create_new(cls, value):
