@@ -1,9 +1,11 @@
 from typing import Literal, Optional, Dict
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 from notion_integration.api.models.fields import (
-    typeField
+    typeField, idField
 )
 
 
@@ -31,8 +33,40 @@ class RichTextObject(BaseModel):
         )
 
 
-class FileObject(BaseModel):
+class File(BaseModel):
+    name: str
     url: str
+
+
+class ExternalFile(BaseModel):
+    url: str
+
+
+class NotionFile(BaseModel):
+    url: str
+    expiry_time: str
+
+
+class FileObject(BaseModel):
+    reference_type: str = typeField
+    name: str
+    external: Optional[ExternalFile]
+    file: Optional[NotionFile]
+
+    @property
+    def value(self):
+        if self.external is not None:
+            return self.external.url
+        elif self.file is not None:
+            return self.file.url
+
+    @classmethod
+    def from_file(cls, file: File):
+        return cls(
+            type="external",
+            name=file.name,
+            external=ExternalFile(url=file.url)
+        )
 
 
 class EmojiObject(BaseModel):
@@ -44,3 +78,25 @@ class ParentObject(BaseModel):
     parent_type: str = typeField
     page_id: Optional[str]
     database_id: Optional[str]
+
+
+class SelectObject(BaseModel):
+    select_id: Optional[str] = idField
+    name: str
+    color: Optional[str]
+
+
+class StatusObject(BaseModel):
+    status_id: Optional[str] = idField
+    name: str
+    color: Optional[str]
+
+
+class DateObject(BaseModel):
+    start: datetime
+    end: Optional[datetime]
+    time_zone: Optional[str]
+
+
+class RelationObject(BaseModel):
+    relation_id: str = idField

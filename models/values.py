@@ -1,8 +1,12 @@
-from typing import Union, Optional, List, ClassVar, Dict, Type
+from uuid import UUID
+
+from typing import Union, Optional, List, ClassVar, Dict, Type, Tuple
+from typing_extensions import Annotated
 
 from datetime import datetime, date
 
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, Field, root_validator, parse_obj_as
+from pydantic import ValidationError
 
 from notion_integration.api.models.fields import (
     idField,
@@ -10,8 +14,15 @@ from notion_integration.api.models.fields import (
 )
 
 from notion_integration.api.models.common import (
-    FileObject, RichTextObject
+    FileObject, RichTextObject, SelectObject, StatusObject, DateObject, File,
+    RelationObject
 )
+
+from notion_integration.api.models.objects import User
+
+
+def excluded(field_type):
+    return Annotated[field_type, Field(exclude=True)]
 
 
 class PropertyValue(BaseModel):
@@ -22,9 +33,12 @@ class PropertyValue(BaseModel):
     def vaidate_init(cls, values):
         init = values.get('init', None)
         for check_type, method_name in cls._type_map.items():
-            if isinstance(init, check_type):
-                values[cls._set_field] = getattr(cls, method_name)(init)
+            try:
+                obj = parse_obj_as(check_type, init)
+                values[cls._set_field] = getattr(cls, method_name)(obj)
                 break
+            except ValidationError:
+                pass
         return values
 
     @classmethod
@@ -40,7 +54,7 @@ class TitlePropertyValue(PropertyValue):
     }
     _set_field = 'title'
 
-    init: Optional[Union[RichTextObject, str, List[RichTextObject]]]
+    init: excluded(Optional[Union[RichTextObject, str, List[RichTextObject]]])
     title: List[RichTextObject]
 
     @classmethod
@@ -60,7 +74,7 @@ class RichTextPropertyValue(PropertyValue):
     }
     _set_field = 'rich_text'
 
-    init: Optional[Union[RichTextObject, str, List[RichTextObject]]]
+    init: excluded(Optional[Union[RichTextObject, str, List[RichTextObject]]])
     rich_text: List[RichTextObject]
 
     @classmethod
@@ -79,14 +93,8 @@ class NumberPropertyValue(PropertyValue):
     }
     _set_field = 'number'
 
-    init: Optional[Union[float, int]]
+    init: excluded(Optional[Union[float, int]])
     number: float
-
-
-class SelectValue(BaseModel):
-    select_id: Optional[str] = idField
-    name: str
-    color: Optional[str]
 
 
 class SelectPropertyValue(PropertyValue):
@@ -95,18 +103,12 @@ class SelectPropertyValue(PropertyValue):
     }
     _set_field = 'select'
 
-    init: Optional[str]
-    select: SelectValue
+    init: excluded(Optional[str])
+    select: SelectObject
 
     @classmethod
     def validate_str(cls, init: str):
-        return SelectValue(name=init)
-
-
-class StatusValue(BaseModel):
-    status_id: Optional[str] = idField
-    name: str
-    color: Optional[str]
+        return SelectObject(name=init)
 
 
 class StatusPropertyValue(PropertyValue):
@@ -115,12 +117,12 @@ class StatusPropertyValue(PropertyValue):
     }
     _set_field = 'status'
 
-    init: Optional[str]
-    status: StatusValue
+    init: excluded(Optional[str])
+    status: StatusObject
 
     @classmethod
     def validate_str(cls, init: str):
-        return StatusValue(name=init)
+        return StatusObject(name=init)
 
 
 class MultiselectPropertyValue(PropertyValue):
@@ -129,32 +131,158 @@ class MultiselectPropertyValue(PropertyValue):
     }
     _set_field = 'multi_select'
 
-    init: Optional[List[str]]
-    multi_select: List[SelectValue]
+    init: excluded(Optional[List[str]])
+    multi_select: List[SelectObject]
 
     @classmethod
     def validate_str(cls, init: List[str]):
-        return [SelectValue(name=init_item) for init_item in init]
+        return [SelectObject(name=init_item) for init_item in init]
 
 
-class FileReferenceValue(BaseModel):
-    reference_type: str = typeField
-    name: str
-    external: Optional[FileObject]
-    file: Optional[FileObject]
+class DatePropertyValue(PropertyValue):
+    _type_map = {
+        date: 'validate_date',
+        datetime: 'validate_date',
+        str: 'validate_str',
+        DateObject: 'leave_unchanged',
+        Tuple[datetime, datetime]:
+            'validate_date_tuple',
+        Tuple[str, str]: 'validate_str_tuple'
+    }
 
-    @property
-    def value(self):
-        if self.external is not None:
-            return self.external.url
-        elif self.file is not None:
-            return self.file.url
+    _set_field = 'date'
+
+    init: excluded(Optional[Union[
+        datetime, date,
+        str, DateObject,
+        Tuple[datetime, datetime],
+        Tuple[str, str]
+    ]])
+    date: DateObject
+
+    @classmethod
+    def validate_date(cls, init: datetime):
+        return DateObject(start=init)
+
+    @classmethod
+    def validate_str(cls, init: str):
+        try:
+            date_obj = datetime.fromisoformat(init)
+            return DateObject(start=date_obj)
+        except ValueError as e:
+            raise (
+                ValidationError("Suppied date string is not in iso format")
+            ) from e
+
+    @classmethod
+    def validate_date_tuple(
+        cls,
+        init: Tuple[datetime, datetime]
+    ):
+        return DateObject(start=init[0], end=init[1])
+
+    @classmethod
+    def validate_str_tuple(cls, init: Tuple[str, str]):
+        try:
+            start = datetime.fromisoformat(init[0])
+            end = datetime.fromisoformat(init[1])
+            return DateObject(start=start, end=end)
+        except ValueError as e:
+            raise (
+                ValidationError("Suppied date string is not in iso format")
+            ) from e
 
 
-class DatePropertyValue(BaseModel):
-    start: Union[datetime, date]
-    end: Optional[Union[datetime, date]]
-    time_zone: Optional[str]
+class PeoplePropertyValue(PropertyValue):
+    _type_map = {
+        List[str]: "validate_str",
+        List[User]: "leave_unchanged"
+    }
+    _set_field = 'people'
+
+    init: excluded(Optional[Union[List[str], List[User]]])
+    people: List[User]
+
+    @classmethod
+    def validate_str(cls, init: List[str]):
+        users = []
+        for value in init:
+            uuid = UUID(value)
+            users.append(User.from_id(str(uuid)))
+        return users
+
+
+class FilePropertyValue(PropertyValue):
+    _type_map = {
+        List[File]: "validate_file"
+    }
+
+    _set_field = 'files'
+
+    init: excluded(Optional[List[File]])
+    files: List[FileObject]
+
+    @classmethod
+    def validate_file(cls, init: List[File]):
+        files = []
+        for value in init:
+            files.append(FileObject.from_file(value))
+        return files
+
+
+class CheckboxPropertyValue(PropertyValue):
+    _type_map = {
+        bool: "leave_unchanged"
+    }
+
+    _set_field = 'checkbox'
+
+    init: excluded(Optional[bool])
+    checkbox: bool
+
+
+class URLPropertyValue(PropertyValue):
+    _type_map = {
+        str: "leave_unchanged"
+    }
+    _set_field = 'url'
+
+    init: excluded(Optional[str])
+    url: str
+
+
+class EmailPropertyValue(PropertyValue):
+    _type_map = {
+        str: "leave_unchanged"
+    }
+    _set_field = 'email'
+
+    init: excluded(Optional[str])
+    email: str
+
+
+class PhoneNumberPropertyValue(PropertyValue):
+    _type_map = {
+        str: "leave_unchanged"
+    }
+    _set_field = 'phone_number'
+
+    init: excluded(Optional[str])
+    phone_number: str
+
+
+class RelationPropertyItem(PropertyValue):
+    _type_map = {
+        List[str]: "validate_str"
+    }
+    _set_field = 'relation'
+
+    init: excluded(Optional[List[str]])
+    relation: List[RelationObject]
+
+    @classmethod
+    def validate_str(cls, init: List[str]):
+        return [RelationObject(id=value) for value in init]
 
 
 class FormulaValue(BaseModel):
@@ -181,6 +309,14 @@ def generate_value(property_type, value):
         "select": SelectPropertyValue,
         "status": StatusPropertyValue,
         "multi_select": MultiselectPropertyValue,
+        "date": DatePropertyValue,
+        "people": PeoplePropertyValue,
+        "files": FilePropertyValue,
+        "checkbox": CheckboxPropertyValue,
+        "url": URLPropertyValue,
+        "email": EmailPropertyValue,
+        "phone_number": PhoneNumberPropertyValue,
+        "relation": RelationPropertyItem
     }
     value_cls = _class_map.get(property_type, None)
     if value_cls is None:

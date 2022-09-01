@@ -25,7 +25,6 @@ class NotionObjectBase(BaseModel):
         try:
             temp_obj = cls(**obj)
         except Exception as e:
-            breakpoint()
             raise e
 
         class_key_value = temp_obj._class_key_field
@@ -72,7 +71,7 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
 class User(NotionObject):
     _class_key_field = None
 
-    user_id: str = idField
+    user_id: Optional[str] = idField
     user_type: Optional[Literal["person", "bot"]] = typeField
     name: Optional[str]
     avatar_url: Optional[str]
@@ -82,6 +81,20 @@ class User(NotionObject):
     owner_type: Optional[
         Literal["workspace", "user"]
     ] = Field(alias="owner.type")
+
+    @classmethod
+    def from_id(cls, id: str):
+        return cls(
+            object="user",
+            id=id
+        )
+
+    @classmethod
+    def from_name(cls, name: str):
+        return cls(
+            object="user",
+            name=name
+        )
 
 
 class Pagination(NotionObject):

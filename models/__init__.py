@@ -10,20 +10,25 @@ from notion_integration.api.models.fields import (
 )
 
 from notion_integration.api.models.common import (
+    TextObject,
     RichTextObject,
+    File,
+    ExternalFile,
+    NotionFile,
     FileObject,
     EmojiObject,
-    ParentObject
+    ParentObject,
+    SelectObject,
+    StatusObject,
+    DateObject,
+    RelationObject
 )
 
 from notion_integration.api.models.values import (
-    FileReferenceValue,
-    DatePropertyValue,
-    SelectValue,
-    StatusValue,
     FormulaValue,
     PageReferenceValue,
-    RollupValue
+    RollupValue,
+    PropertyValue
 )
 
 from notion_integration.api.models.objects import (
@@ -111,18 +116,23 @@ __all__ = [
     "andField",
     "orField",
 
+    "TextObject",
     "RichTextObject",
+    "File",
+    "ExternalFile",
+    "NotionFile",
     "FileObject",
     "EmojiObject",
     "ParentObject",
+    "SelectObject",
+    "StatusObject",
+    "DateObject",
+    "RelationObject",
 
-    "FileReferenceValue",
-    "DatePropertyValue",
-    "SelectValue",
-    "StatusValue",
     "FormulaValue",
     "PageReferenceValue",
     "RollupValue",
+    "PropertyValue",
 
     "NotionObjectBase",
     "NotionObject",

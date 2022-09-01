@@ -1,17 +1,21 @@
 from pydantic import BaseModel
+from typing import Dict
 
 
-def constructor(fn):
-    breakpoint()
+class FooBase(BaseModel):
+    pass
 
 
-class TestModel(BaseModel):
+class Foo(FooBase):
     foo: str
 
-    @constructor
-    def int_constructor(self, value: int):
-        self.foo = value
+
+class Bar(BaseModel):
+    bar: Dict[str, FooBase]
 
 
 if __name__ == '__main__':
-    tm = TestModel()
+    foo = Foo(foo='foo')
+    bar = Bar(bar={'foo': foo})
+
+    print(bar.json())

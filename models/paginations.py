@@ -24,14 +24,3 @@ class PropertyItemPagination(Pagination):
     @property
     def _class_key_field(self):
         return self.property_item['type']
-
-    @classmethod
-    def create_new(cls, value):
-        """Creates a new property item with the given value.
-        Not all fields may be correctly filled to match pydantic's requirements
-        For creating new items to be posted.
-
-        """
-        obj = cls.construct()
-        obj.set_value(value)
-        return obj

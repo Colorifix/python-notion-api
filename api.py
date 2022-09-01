@@ -1,5 +1,7 @@
 from typing import Union, Any, Literal, Dict, Optional, Type, Generator, List
 
+from pydantic import BaseModel
+
 import logging
 import json
 
@@ -7,6 +9,8 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 
 from requests.packages.urllib3.util.retry import Retry
+
+from notion_integration.api.models.common import ParentObject
 
 from notion_integration.api.models.objects import (
     Database,
@@ -30,7 +34,7 @@ from notion_integration.api.models.iterators import (
     RelationPropertyItemIterator
 )
 
-from notion_integration.api.models.values import generate_value
+from notion_integration.api.models.values import generate_value, PropertyValue
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +46,10 @@ class NotionPage:
         api: Instance of the NotionAPI.
         page_id: Id of the page.
     """
+
+    class PatchRequest(BaseModel):
+        properties: Dict[str, PropertyValue]
+
     def __init__(self, api, page_id, database=None):
         self._api = api
         self._page_id = page_id
@@ -107,24 +115,25 @@ class NotionPage:
             prop_name: Name of the property to update
             value: A new value of the property
         """
+
         if prop_name in self._object.properties:
             prop_type = self.database.properties[prop_name].config_type
 
             value = generate_value(prop_type, value)
-
-            data = {
-                'properties': {
-                    prop_name: value.dict(
-                        exclude={'init'},
-                        by_alias=True,
-                        exclude_unset=True
-                    )
+            request = NotionPage.PatchRequest(
+                properties={
+                    prop_name: value
                 }
-            }
-            print(data)
+            )
+
+            data = request.json(
+                by_alias=True,
+                exclude_unset=True
+            )
+
             self._api._patch(
                 endpoint=f'pages/{self._page_id}',
-                data=json.dumps(data)
+                data=data
             )
 
     @property
@@ -176,6 +185,11 @@ class NotionDatabase:
         api: Instance of the NotionAPI.
         database_id: Id of the database.
     """
+
+    class CreatePageRequest(BaseModel):
+        parent: ParentObject
+        properties: Dict[str, PropertyValue]
+
     def __init__(self, api, database_id):
         self._api = api
         self._database_id = database_id
@@ -337,31 +351,31 @@ class NotionDatabase:
             cover: URL of an image for the page cover. E.g. a gdrive url.
         """
 
-        # Create an empty page in the database
-        data = {
-            "parent": {
-                "database_id": self.database_id
-            },
-            'properties': {}
-        }
-        property_configs = self.properties
-
+        validated_properties = {}
         for prop_name, prop_value in properties.items():
+            prop = self.properties.get(prop_name, None)
+            if prop is None:
+                raise ValueError("Unknown property: '{prop_name}'")
+            value = generate_value(prop.config_type, prop_value)
+            validated_properties[prop_name] = value
 
-            # For each property name get the property configuration
-            property_config = property_configs[prop_name]
-            new_prop = self.get_property(property_config, prop_value)
-            data['properties'][prop_name] = new_prop.get_dict_for_post()
+        request = NotionDatabase.CreatePageRequest(
+            parent=ParentObject(
+                type="database_id",
+                database_id=self.database_id
+            ),
+            properties=validated_properties
+        )
 
-        if cover is not None:
-            data['cover'] = {
-                "type": "external",
-                "external": {
-                    "url": cover
-                }
-            }
+        data = request.json(
+            by_alias=True,
+            exclude_unset=True
+        )
 
-        new_page = self._api._post("pages", data=json.dumps(data))
+        new_page = self._api._post(
+            "pages",
+            data=data
+        )
 
         return NotionPage(
             api=self._api,
@@ -377,6 +391,7 @@ class NotionAPI:
         access_token: Notion access token
         api_version: Version of the notion API
     """
+
     def __init__(self, access_token: str, api_version='2022-06-28'):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"

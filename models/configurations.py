@@ -1,15 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional
 
 from notion_integration.api.models.fields import (
     idField, typeField
 )
 
 from notion_integration.api.models.objects import NotionObjectBase
-from notion_integration.api.models.values import SelectValue
-from notion_integration.api.models.properties import PropertyItem
-from notion_integration.api.models.iterators import PropertyItemIterator
-from notion_integration.api.utils import get_derived_class
+from notion_integration.api.models.common import SelectObject
 
 EmptyField = Optional[Dict]
 
@@ -46,27 +43,6 @@ class NotionPropertyConfiguration(NotionObjectBase):
     def _class_key_field(self):
         return self.config_type
 
-    def create_property(self, value: Any):
-        # First check for a property
-        class_name = PropertyItem._class_map.get(self.config_type, None)
-
-        if class_name is not None:
-            derived_class = get_derived_class(PropertyItem, class_name)
-        else:
-            # If not a property, may be a pagination
-            class_name = PropertyItemIterator._iterator_map.get(
-                self.config_type, None)
-            if class_name is not None:
-                derived_class = get_derived_class(PropertyItemIterator,
-                                                  class_name)
-            else:
-                raise ValueError(
-                    f"Cannot find property class for {self.__class__}"
-                )
-        prop = derived_class.create_new(value)
-
-        return prop
-
 
 class TitlePropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
@@ -89,7 +65,7 @@ class NumberPropertyConfiguration(NotionPropertyConfiguration):
 class SelectPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    options: Optional[List[SelectValue]] = []
+    options: Optional[List[SelectObject]] = []
 
 
 class StatusPropertyConfiguration(NotionPropertyConfiguration):
@@ -101,7 +77,7 @@ class StatusPropertyConfiguration(NotionPropertyConfiguration):
 class MultiSelectPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    options: Optional[List[SelectValue]] = []
+    options: Optional[List[SelectObject]] = []
 
 
 class DatePropertyConfiguration(NotionPropertyConfiguration):
