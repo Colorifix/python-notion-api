@@ -106,6 +106,27 @@ from notion_integration.api.models.iterators import (
     RollupPropertyItemIterator
 )
 
+from notion_integration.api.models.filters import (
+    RichTextFilter,
+    PhoneNumberFilter,
+    NumberFilter,
+    SelectFilter,
+    MultiSelectFilter,
+    DateFilter,
+    PeopleFiter,
+    FilesFilter,
+    RelationFilter,
+    FormulaFilter,
+    TimestampFilter,
+    FilterItem,
+    AndFilter,
+    OrFilter,
+    or_filter,
+    and_filter
+)
+
+from notion_integration.api.models.sorts import Sort
+
 __all__ = [
     "typeField",
     "idField",
@@ -199,5 +220,24 @@ __all__ = [
     "RichTextPropertyItemIterator",
     "PeoplePropertyItemIterator",
     "RelationPropertyItemIterator",
-    "RollupPropertyItemIterator"
+    "RollupPropertyItemIterator",
+
+    "RichTextFilter",
+    "PhoneNumberFilter",
+    "NumberFilter",
+    "SelectFilter",
+    "MultiSelectFilter",
+    "DateFilter",
+    "PeopleFiter",
+    "FilesFilter",
+    "RelationFilter",
+    "FormulaFilter",
+    "TimestampFilter",
+    "FilterItem",
+    "AndFilter",
+    "OrFilter",
+    "or_filter",
+    "and_filter",
+
+    "Sort"
 ]

@@ -1,21 +1,25 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra, root_validator
 from typing import Dict
 
 
-class FooBase(BaseModel):
-    pass
-
-
-class Foo(FooBase):
+class Foo(BaseModel):
     foo: str
+    bar: str
+    baz: str
+
+    # class Config:
+    #     orm_mode = True
 
 
-class Bar(BaseModel):
-    bar: Dict[str, FooBase]
+class Bar(BaseModel, extra=Extra.ignore):
+    brr: Foo
+
+    @root_validator(pre=True)
+    def validate_bar(cls, values):
+        values['brr'] = values
+        return values
 
 
 if __name__ == '__main__':
-    foo = Foo(foo='foo')
-    bar = Bar(bar={'foo': foo})
-
-    print(bar.json())
+    bar = Bar(foo='foo', bar='bar', baz='baz')
+    print(bar.dict())

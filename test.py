@@ -2,6 +2,12 @@ import unittest
 import os
 
 from notion_integration.api import NotionAPI, File
+from notion_integration.api.models.filters import (
+    and_filter, or_filter,
+    SelectFilter, MultiSelectFilter
+)
+
+from notion_integration.api.models.sorts import Sort
 
 from datetime import datetime
 
@@ -11,6 +17,20 @@ class _TestBase(unittest.TestCase):
     def setUpClass(cls):
         cls.api = NotionAPI(access_token=os.environ.get("NOTION_SECRET"))
         cls.TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
+
+        cls.TEST_TITLE = f"API Test {datetime.utcnow().isoformat()}"
+        cls.TEST_TEXT = "Test text is boring"
+        cls.TEST_NUMBER = 12.5
+        cls.TEST_SELECT = "foo"
+        cls.TEST_STATUS = "In progress"
+        cls.TEST_MULTI_SELECT = ["foo", "bar", "baz"]
+        cls.TEST_DATE = datetime.now()
+        cls.TEST_PEOPLE = ["fa9e1df9-7c24-427c-9c20-eac629565fe4"]
+        cls.TEST_FILES = [File(name="foo.pdf", url="http://example.com/file")]
+        cls.TEST_CHECKBOX = True
+        cls.TEST_URL = "http://colorifix.com"
+        cls.TEST_EMAIL = "admin@colorifix.com"
+        cls.TEST_PHONE = "079847364088"
 
         cls.extra_setup()
 
@@ -33,20 +53,6 @@ class TestCore(_TestBase):
 class TestPage(_TestBase):
     @classmethod
     def extra_setup(cls):
-        cls.TEST_TITLE = f"API Test {datetime.utcnow().isoformat()}"
-        cls.TEST_TEXT = "Test text is boring"
-        cls.TEST_NUMBER = 12.5
-        cls.TEST_SELECT = "foo"
-        cls.TEST_STATUS = "In progress"
-        cls.TEST_MULTI_SELECT = ["foo", "bar", "baz"]
-        cls.TEST_DATE = datetime.now()
-        cls.TEST_PEOPLE = ["fa9e1df9-7c24-427c-9c20-eac629565fe4"]
-        cls.TEST_FILES = [File(name="foo.pdf", url="http://example.com/file")]
-        cls.TEST_CHECKBOX = True
-        cls.TEST_URL = "http://colorifix.com"
-        cls.TEST_EMAIL = "admin@colorifix.com"
-        cls.TEST_PHONE = "079847364088"
-
         cls.db = cls.api.get_database(database_id=cls.TEST_DB)
 
         cls.new_page = cls.db.create_page()
@@ -155,3 +161,48 @@ class TestDatabase(_TestBase):
 
     def test_query_database(self):
         pages = self.db.query()
+
+    def test_prop_filter(self):
+        pages = self.db.query(
+            filters=SelectFilter(property="Select", equals=self.TEST_SELECT)
+        )
+        page = next(pages)
+        self.assertEqual(page.get("Select").value, self.TEST_SELECT)
+
+    def test_and_filter(self):
+        pages = self.db.query(
+            filters=and_filter(
+                [
+                    SelectFilter(property="Select", equals=self.TEST_SELECT),
+                    MultiSelectFilter(property="Multi-select", contains="bar")
+                ]
+            )
+        )
+        page = next(pages)
+        self.assertEqual(page.get("Select").value, self.TEST_SELECT)
+
+    def test_or_filter(self):
+        pages = self.db.query(
+            filters=or_filter(
+                [
+                    SelectFilter(property="Select", equals=self.TEST_SELECT),
+                    MultiSelectFilter(property="Multi-select", contains="bar")
+                ]
+            )
+        )
+        page = next(pages)
+        self.assertEqual(page.get("Select").value, self.TEST_SELECT)
+
+    def test_sort(self):
+        pages = self.db.query(
+            sorts=[Sort(property="Date")]
+        )
+        page = next(pages)
+        self.assertIsNotNone(page)
+
+    def test_descending_sort(self):
+        pages = self.db.query(
+            sorts=[Sort(property="Date", descending=True)]
+        )
+        page = next(pages)
+        self.assertIsNotNone(page)

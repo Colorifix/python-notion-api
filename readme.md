@@ -3,6 +3,8 @@
 ## Quick start
 
 ```python
+from api import NotionAPI
+
 api = NotionAPI(
     access_token='secret_token'
 )
@@ -10,31 +12,110 @@ api = NotionAPI(
 
 ## Notion Database
 
-Currently only **Retrieve a database** action is fully supported. Querying is
-supported, with filtering and sorting.
-
-For filtering and sorting the input json object can be of [this format](https://developers.notion.com/reference/post-database-query-filter) for filtering and [this format](https://developers.notion.com/reference/post-database-query-sort) for sorting.
-
-The is a `create_filter` method available in the NotionDatabase class for generating the correct filter format. Not all property formats are yet supported. Multiple properties will result in an AND filter. OR filters are not supported.
-
-Filter properties are set such that the column name as the key and the set of query type and property as the value. Example below:
+### Retrieve a database
 
 ```python
-database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+from api import NotionAPI
 
-sort_filter = database.create_filter(
-    properties={
-        "Value": ("equals", 12),
-        "Select_property": ("equals", "select1"),
-        "Name": ("contains", "Test")
-    }
+api = NotionAPI(
+    access_token='secret_token'
 )
 
-for page in database.query(sort_filter):
+database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+```
+
+Returns a `NotionDatabase` object.
+
+### Query
+
+```python
+from api import NotionAPI
+
+api = NotionAPI(
+    access_token='secret_token'
+)
+
+database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+for page in database.query():
     ...
 ```
 
-You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). 
+Allows you to iterate over all pages in the database.
+
+### Filters
+
+You can use filter classes in `api.models.filters` to create property filters and pass them to the query.
+
+```python
+from api.models.filters import SelectFilter
+
+res = database.query(
+    filters=SelectFilter(property="Property Name", equals="xxx")
+)
+```
+
+Timestamp, 'and' and 'or' filters are supported:
+
+```python
+from api.models.filters import SelectFilter, NumberFilter, CheckboxFilter
+from api.models.filters import and_filter, or_filter
+
+res = database.query(
+    filters=or_filter([
+        SelectFilter(property="Select", equals="xxx"),
+        and_filter([
+            NumberFilter(property="Number", greater_than=10),
+            CheckboxFilter(property="Checkbox", equals=True)
+        ])
+    ])
+)
+```
+
+You can read more on filters [here](https://developers.notion.com/reference/post-database-query-filter)
+
+### Sorts
+
+You can use `api.models.sorts.Sort` class to create sorts and pass them to the query.
+
+```python
+from api.models.sorts import Sort
+
+res = database.query(
+    sorts=[
+        Sort(property="Title"),
+        Sort(property="Date", descending=True)
+    ]
+)
+```
+
+## Pages
+
+### Retrieve a page
+
+```python
+page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+```
+
+Will return a `NotionPage` object.
+
+### Create a page
+
+```python
+from api import NotionAPI
+
+api = NotionAPI(
+    access_token='secret_token'
+)
+
+database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+database.create_page(
+    properties={
+        "Title": "New page"
+    }
+)
+```
 
 The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `notion_integration.api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
 E.g.
@@ -49,31 +130,26 @@ database.create_page(properties={
 })
 ```
 
-## Notion page
+### Update page
 
-The following actions are supported for pages:
+Currently only supported for inividual properties.
 
-* Retrieve a page
-* Retrieve a page property item
-* Update page (limited to updating one property at a time)
+You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). 
 
 ```python
 page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
-page.get('Property name')
 page.set('Property name', 'new value')
-
-page.to_dict()
-page.properties
 ```
 
-## Property items
+### Retrieve a page property item
+
 
 When getting a property through `page.get` or `page.properties` the return type will
 be either `PropertyItem` or `PropertyItemIterator` (for properties that can have multple values, i.e. relations, title, rich_text and people)
 
 Each property type is wrapped into it's own class defined in `api.models.properties`. To get a human-readable 'simple' value that represents the propery, you can use `PropertyItem.value` attribute. To get a list of all property items values from `PropertyItemIterator` you can use
-`PropertyItemIterator.all()`. For rich_text and title property types `.all()` will return a concatenaded string.
+`PropertyItemIterator.value`. For rich_text and title property types `value` will return a concatenaded string.
 
 ```python
 page.get('Prroperty name').value

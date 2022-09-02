@@ -34,6 +34,10 @@ from notion_integration.api.models.iterators import (
     RelationPropertyItemIterator
 )
 
+from notion_integration.api.models.filters import FilterItem
+
+from notion_integration.api.models.sorts import Sort
+
 from notion_integration.api.models.values import generate_value, PropertyValue
 
 log = logging.getLogger(__name__)
@@ -214,9 +218,8 @@ class NotionDatabase:
         return self._database_id
 
     def query(self,
-              filter_properties: Optional[Dict[str, Dict]] = {},
-              sort_properties: Optional[Dict[str, Dict]] = {},
-              or_filter: Optional[bool] = False
+              filters: Optional[FilterItem] = None,
+              sorts: Optional[List[Sort]] = None,
               ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
@@ -230,14 +233,26 @@ class NotionDatabase:
             https://developers.notion.com/reference/post-database-query-sort
 
         """
+        data = {}
+        if filters is not None:
+            filters = filters.dict(
+                by_alias=True,
+                exclude_unset=True
+            )
+            data['filter'] = filters
+
+        if sorts is not None:
+            data['sorts'] = [
+                sort.dict(
+                    by_alias=True,
+                    exclude_unset=True
+                )
+                for sort in sorts
+            ]
+
         for item in self._api._post_iterate(
             endpoint=f'databases/{self._database_id}/query',
-            data={
-                'filter': self._create_filter(
-                    filter_properties, or_filter=or_filter
-                ),
-                'sorts': self._create_sorts(sort_properties)
-            }
+            data=data
         ):
             yield NotionPage(
                 api=self._api, database=self, page_id=item.page_id
@@ -284,57 +299,6 @@ class NotionDatabase:
             new_prop = prop_config.create_property(prop_value)
 
         return new_prop
-
-    def _create_filter(self, properties, or_filter):
-        """Create a filter objects in json format. Multiple properties are
-        joined in an AND filter. OR filters are not yet supported.
-        """
-
-        property_configs = self.properties
-
-        filters = []
-
-        for prop_name, (prop_query, prop_value) in properties.items():
-
-            property_config = property_configs[prop_name]
-            filter_dict = {
-                property_config.config_type: {prop_query: prop_value}
-            }
-
-            prop_dict = {"property": prop_name}
-            filter_dict = [prop_dict | filter_dict]
-            filters += filter_dict
-
-        # Single filter
-        if len(filters) == 1:
-            return filters[0]
-
-        # Compound filter
-        else:
-            return {
-                ("or" if or_filter else "and"): filters
-            }
-
-    def _create_sorts(self, properties: Dict[str, str]):
-        property_configs = self.properties
-
-        sorts = []
-
-        for prop_name, direction in properties.items():
-            if prop_name not in property_configs:
-                raise NameError(f'Unknown property for sort: "{prop_name}"')
-            if direction != "ascending" and direction != "descending":
-                raise ValueError(
-                    f'Sort direction can be either "ascending" or'
-                    f' "descending", got "{direction}"'
-                )
-            sorts.append(
-                {
-                    "property": prop_name,
-                    "direction": direction
-                }
-            )
-        return sorts
 
     def create_page(self, properties: Dict[str, Any] = {},
                     cover: Optional[str] = None,
