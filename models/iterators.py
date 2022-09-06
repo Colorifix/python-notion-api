@@ -138,7 +138,7 @@ class RollupPropertyItemIterator(PropertyItemIterator):
     iterator_type = 'rollup'
 
     def all(self):
-        return [res.value for res in self.generator]
+        return [item for item in self.generator]
 
     def set_value(self, results: Dict[str, Any]):
         self.generator = iter([results])

@@ -102,6 +102,12 @@ class NotionPage:
                     prop_id
                 )
 
+                # iterator = PropertyItemIterator(
+                #     generator,
+                #     prop_type,
+                #     prop_id
+                # )
+
                 return iterator
 
             elif isinstance(ret, PropertyItem):
@@ -338,8 +344,6 @@ class NotionDatabase:
             by_alias=True,
             exclude_unset=True
         )
-
-        print(data)
 
         new_page = self._api._post(
             "pages",

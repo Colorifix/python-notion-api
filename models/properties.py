@@ -1,6 +1,6 @@
-from typing import Optional, List
+from typing import Optional, List, Literal, Dict
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from notion_integration.api.models.fields import (
     idField, typeField
@@ -181,25 +181,101 @@ class RelationPagination(PropertyItemPagination):
     results: List[RelationPropertyItem]
 
 
-class RollupPropertyItem(PropertyItem):
-    _class_key_field = None
-    property_type = "rollup"
+class RollupPropertyItem(BaseModel):
+    rollup_id: str = idField
+    next_url: Optional[str]
+    rollup_type: Literal["rollup"] = typeField
 
-    rollup: RollupValue
 
-    @property
-    def value(self):
-        return ''
+class Rollup(BaseModel):
+    function: str
+    rollup_type: str = typeField
+
+
+class NumberRollup(Rollup):
+    number: float
+
+
+class DateRollup(Rollup):
+    date: str
+
+
+class ArrayRollup(Rollup):
+    pass
+
+
+class IncompleteRollup(Rollup):
+    incomplete: Dict
+
+
+class UnsupportedRollup(Rollup):
+    unsupported: Dict
+
+
+class NumberRollupPropertyItem(RollupPropertyItem):
+    rollup: NumberRollup
+
+
+class DateRollupPropertyItem(RollupPropertyItem):
+    rollup: DateRollup
+
+
+class ArrayRollupPropertyItem(RollupPropertyItem):
+    rollup: ArrayRollup
+
+
+class IncompleteRollupPropertyItem(RollupPropertyItem):
+    rollup: IncompleteRollup
+
+
+class UnsupportedRollupPropertyItem(RollupPropertyItem):
+    rollup: UnsupportedRollup
 
 
 class RollupPagination(PropertyItemPagination):
-    _class_key_field = None
-
-    results: List
+    _class_map = {
+        "number": "NumberRollupPagination",
+        "date": "DateRollupPagination",
+        "array": "ArrayRollupPagination",
+        "incomplete": "IncompleteRollupPagination",
+        "unsupported": "UnsupportedRollupPagination"
+    }
 
     @property
-    def value(self):
-        return [PropertyItem.from_obj(res).value for res in self.results]
+    def _class_key_field(self):
+        return self.property_item['rollup']['type']
+
+    results: List[PropertyItem]
+
+
+class NumberRollupPagination(RollupPagination):
+    _class_key_field = None
+
+    property_item: NumberRollupPropertyItem
+
+
+class DateRollupPagination(RollupPagination):
+    _class_key_field = None
+
+    property_item: DateRollupPropertyItem
+
+
+class ArrayRollupPagination(RollupPagination):
+    _class_key_field = None
+
+    property_item: ArrayRollupPropertyItem
+
+
+class IncompleteRollupPagination(RollupPagination):
+    _class_key_field = None
+
+    property_item: IncompleteRollupPropertyItem
+
+
+class UnsupportedRollupPagination(RollupPagination):
+    _class_key_field = None
+
+    property_item: UnsupportedRollupPropertyItem
 
 
 class PeoplePropertyItem(PropertyItem):
