@@ -10,7 +10,7 @@ from requests.adapters import HTTPAdapter
 
 from requests.packages.urllib3.util.retry import Retry
 
-from notion_integration.api.models.common import ParentObject
+from notion_integration.api.models.common import ParentObject, FileObject, File
 
 from notion_integration.api.models.objects import (
     Database,
@@ -93,9 +93,6 @@ class NotionPage:
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
 
-                # parent_id = self.parent.database_id
-                # parent_db = self._api.get_database(parent_id)
-
                 prop_type = self.database.properties[prop_name].config_type
                 prop_id = self.database.properties[prop_name].config_id
 
@@ -139,6 +136,10 @@ class NotionPage:
                 endpoint=f'pages/{self._page_id}',
                 data=data
             )
+        else:
+            raise ValueError(
+                f"Unknown property '{prop_name}'"
+            )
 
     @property
     def properties(self) -> Dict[
@@ -173,9 +174,6 @@ class NotionPage:
             if isinstance(prop, RelationPropertyItemIterator):
                 if include_rels:
                     vals[prop_name] = prop.all()
-            elif isinstance(prop, PropertyItemIterator):
-                if not rels_only:
-                    vals[prop_name] = prop.all()
             else:
                 if not rels_only:
                     vals[prop_name] = prop.value
@@ -193,6 +191,7 @@ class NotionDatabase:
     class CreatePageRequest(BaseModel):
         parent: ParentObject
         properties: Dict[str, PropertyValue]
+        cover: Optional[FileObject]
 
     def __init__(self, api, database_id):
         self._api = api
@@ -301,7 +300,7 @@ class NotionDatabase:
         return new_prop
 
     def create_page(self, properties: Dict[str, Any] = {},
-                    cover: Optional[str] = None,
+                    cover_url: Optional[str] = None,
                     ) -> NotionPage:
         """Creates a new page in the Database and updates the new page with
         the properties.
@@ -328,13 +327,19 @@ class NotionDatabase:
                 type="database_id",
                 database_id=self.database_id
             ),
-            properties=validated_properties
+            properties=validated_properties,
+            cover=(
+                FileObject.from_url(cover_url)
+                if cover_url is not None else None
+            )
         )
 
         data = request.json(
             by_alias=True,
             exclude_unset=True
         )
+
+        print(data)
 
         new_page = self._api._post(
             "pages",

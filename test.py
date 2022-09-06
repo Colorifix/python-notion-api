@@ -49,6 +49,18 @@ class TestCore(_TestBase):
         new_page = db.create_page()
         self.assertIsNotNone(new_page)
 
+    def test_create_empty_page_with_cover(self):
+        db = self.api.get_database(database_id=self.TEST_DB)
+        new_page = db.create_page(
+            cover_url=(
+                "https://images.unsplash.com/"
+                "photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&"
+                "ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8"
+                "&auto=format&fit=crop&w=2286&q=80"
+            )
+        )
+        self.assertIsNotNone(new_page)
+
 
 class TestPage(_TestBase):
     @classmethod

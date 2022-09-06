@@ -30,7 +30,7 @@ class PropertyValue(BaseModel):
     _set_field: ClassVar[str]
 
     @root_validator(pre=True)
-    def vaidate_init(cls, values):
+    def validate_init(cls, values):
         init = values.get('init', None)
         for check_type, method_name in cls._type_map.items():
             try:
@@ -271,7 +271,7 @@ class PhoneNumberPropertyValue(PropertyValue):
     phone_number: str
 
 
-class RelationPropertyItem(PropertyValue):
+class RelationPropertyValue(PropertyValue):
     _type_map = {
         List[str]: "validate_str"
     }
@@ -316,7 +316,7 @@ def generate_value(property_type, value):
         "url": URLPropertyValue,
         "email": EmailPropertyValue,
         "phone_number": PhoneNumberPropertyValue,
-        "relation": RelationPropertyItem
+        "relation": RelationPropertyValue
     }
     value_cls = _class_map.get(property_type, None)
     if value_cls is None:

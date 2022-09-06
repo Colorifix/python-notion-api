@@ -34,7 +34,7 @@ class RichTextObject(BaseModel):
 
 
 class File(BaseModel):
-    name: str
+    name: Optional[str]
     url: str
 
 
@@ -49,7 +49,7 @@ class NotionFile(BaseModel):
 
 class FileObject(BaseModel):
     reference_type: str = typeField
-    name: str
+    name: Optional[str]
     external: Optional[ExternalFile]
     file: Optional[NotionFile]
 
@@ -66,6 +66,13 @@ class FileObject(BaseModel):
             type="external",
             name=file.name,
             external=ExternalFile(url=file.url)
+        )
+
+    @classmethod
+    def from_url(cls, url: str):
+        return cls(
+            type="external",
+            external=ExternalFile(url=url)
         )
 
 
