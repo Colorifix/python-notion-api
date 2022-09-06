@@ -26,9 +26,9 @@ from notion_integration.api.models.objects import (
     NotionObject
 )
 
-from notion_integration.api.models.paginations import (
-    PropertyItemPagination
-)
+# from notion_integration.api.models.paginations import (
+#     PropertyItemPagination
+# )
 
 
 class PropertyItem(NotionObject):
@@ -53,7 +53,11 @@ class PropertyItem(NotionObject):
         "created_by": "CreatedByPropertyItem",
         "last_edited_time": "LastEditedTimePropertyItem",
         "last_edited_by": "LastEditedByPropertyItem",
-        "people": "PeoplePropertyItem"
+        "people": "PeoplePropertyItem",
+        "title": "TitlePropertyItem",
+        "rich_text": "RichTextPropertyItem",
+        "people": "PeoplePropertyItem",
+        "relation": "RelationPropertyItem"
     }
 
     @property
@@ -72,12 +76,6 @@ class TitlePropertyItem(PropertyItem):
         return self.title.plain_text
 
 
-class TitlePagination(PropertyItemPagination):
-    _class_key_field = None
-
-    results: List[TitlePropertyItem]
-
-
 class RichTextPropertyItem(PropertyItem):
     _class_key_field = None
     property_type = "rich_text"
@@ -87,12 +85,6 @@ class RichTextPropertyItem(PropertyItem):
     @property
     def value(self):
         return self.rich_text.plain_text
-
-
-class RichTextPagination(PropertyItemPagination):
-    _class_key_field = None
-
-    results: List[RichTextPropertyItem]
 
 
 class NumberPropertyItem(PropertyItem):
@@ -175,12 +167,6 @@ class RelationPropertyItem(PropertyItem):
         return self.relation.page_id
 
 
-class RelationPagination(PropertyItemPagination):
-    _class_key_field = None
-
-    results: List[RelationPropertyItem]
-
-
 class RollupPropertyItem(BaseModel):
     rollup_id: str = idField
     next_url: Optional[str]
@@ -232,52 +218,6 @@ class UnsupportedRollupPropertyItem(RollupPropertyItem):
     rollup: UnsupportedRollup
 
 
-class RollupPagination(PropertyItemPagination):
-    _class_map = {
-        "number": "NumberRollupPagination",
-        "date": "DateRollupPagination",
-        "array": "ArrayRollupPagination",
-        "incomplete": "IncompleteRollupPagination",
-        "unsupported": "UnsupportedRollupPagination"
-    }
-
-    @property
-    def _class_key_field(self):
-        return self.property_item['rollup']['type']
-
-    results: List[PropertyItem]
-
-
-class NumberRollupPagination(RollupPagination):
-    _class_key_field = None
-
-    property_item: NumberRollupPropertyItem
-
-
-class DateRollupPagination(RollupPagination):
-    _class_key_field = None
-
-    property_item: DateRollupPropertyItem
-
-
-class ArrayRollupPagination(RollupPagination):
-    _class_key_field = None
-
-    property_item: ArrayRollupPropertyItem
-
-
-class IncompleteRollupPagination(RollupPagination):
-    _class_key_field = None
-
-    property_item: IncompleteRollupPropertyItem
-
-
-class UnsupportedRollupPagination(RollupPagination):
-    _class_key_field = None
-
-    property_item: UnsupportedRollupPropertyItem
-
-
 class PeoplePropertyItem(PropertyItem):
     _class_key_field = None
 
@@ -286,12 +226,6 @@ class PeoplePropertyItem(PropertyItem):
     @property
     def value(self):
         return self.people.name
-
-
-class PeoplePagination(PropertyItemPagination):
-    _class_key_field = None
-
-    results: List[PeoplePropertyItem]
 
 
 class FilesPropertyItem(PropertyItem):

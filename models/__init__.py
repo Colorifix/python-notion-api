@@ -41,12 +41,13 @@ from notion_integration.api.models.objects import (
     Page
 )
 
+
 from notion_integration.api.models.properties import (
     PropertyItem,
     TitlePropertyItem,
-    TitlePagination,
+    # TitlePagination,
     RichTextPropertyItem,
-    RichTextPagination,
+    # RichTextPagination,
     NumberPropertyItem,
     SelectPropertyItem,
     StatusPropertyItem,
@@ -54,11 +55,11 @@ from notion_integration.api.models.properties import (
     DatePropertyItem,
     FormulaPropertyItem,
     RelationPropertyItem,
-    RelationPagination,
+    # RelationPagination,
     RollupPropertyItem,
-    RollupPagination,
+    # RollupPagination,
     PeoplePropertyItem,
-    PeoplePagination,
+    # PeoplePagination,
     FilesPropertyItem,
     CheckBoxPropertyItem,
     URLPropertyItem,
@@ -67,7 +68,13 @@ from notion_integration.api.models.properties import (
     CreatedTimePropertyItem,
     CreatedByPropertyItem,
     LastEditedTimePropertyItem,
-    LastEditedByPropertyItem
+    LastEditedByPropertyItem,
+    # PropertyItemPagination
+)
+
+from notion_integration.api.models.paginations import (
+    PagePagination,
+    PropertyItemPagination
 )
 
 from notion_integration.api.models.configurations import (
@@ -98,12 +105,7 @@ from notion_integration.api.models.configurations import (
 )
 
 from notion_integration.api.models.iterators import (
-    PropertyItemIterator,
-    TitlePropertyItemIterator,
-    RichTextPropertyItemIterator,
-    PeoplePropertyItemIterator,
-    RelationPropertyItemIterator,
-    RollupPropertyItemIterator
+    PropertyItemIterator
 )
 
 from notion_integration.api.models.filters import (
@@ -126,6 +128,7 @@ from notion_integration.api.models.filters import (
 )
 
 from notion_integration.api.models.sorts import Sort
+
 
 __all__ = [
     "typeField",
@@ -165,9 +168,7 @@ __all__ = [
 
     "PropertyItem",
     "TitlePropertyItem",
-    "TitlePagination",
     "RichTextPropertyItem",
-    "RichTextPagination",
     "NumberPropertyItem",
     "SelectPropertyItem",
     "StatusPropertyItem",
@@ -175,11 +176,8 @@ __all__ = [
     "DatePropertyItem",
     "FormulaPropertyItem",
     "RelationPropertyItem",
-    "RelationPagination",
     "RollupPropertyItem",
-    "RollupPagination",
     "PeoplePropertyItem",
-    "PeoplePagination",
     "FilesPropertyItem",
     "CheckBoxPropertyItem",
     "URLPropertyItem",
@@ -189,6 +187,9 @@ __all__ = [
     "CreatedByPropertyItem",
     "LastEditedTimePropertyItem",
     "LastEditedByPropertyItem",
+
+    "PagePagination",
+    "PropertyItemPagination",
 
     "NotionPropertyConfiguration",
     "TitlePropertyConfiguration",
@@ -216,11 +217,6 @@ __all__ = [
     "LastEditedByPropertyConfiguration",
 
     "PropertyItemIterator",
-    "TitlePropertyItemIterator",
-    "RichTextPropertyItemIterator",
-    "PeoplePropertyItemIterator",
-    "RelationPropertyItemIterator",
-    "RollupPropertyItemIterator",
 
     "RichTextFilter",
     "PhoneNumberFilter",

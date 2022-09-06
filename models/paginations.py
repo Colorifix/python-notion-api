@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from notion_integration.api.models.objects import Pagination, Page
+from notion_integration.api.models.properties import PropertyItem
 
 
 class PagePagination(Pagination):
@@ -11,16 +12,8 @@ class PagePagination(Pagination):
 
 
 class PropertyItemPagination(Pagination):
+    _class_key_field = None
+
     property_item: Dict
+    results: List[PropertyItem]
 
-    _class_map = {
-        "rich_text": "RichTextPagination",
-        "title": "TitlePagination",
-        "people": "PeoplePagination",
-        "relation": "RelationPagination",
-        "rollup": "RollupPagination"
-    }
-
-    @property
-    def _class_key_field(self):
-        return self.property_item['type']

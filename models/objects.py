@@ -25,7 +25,9 @@ class NotionObjectBase(BaseModel):
         try:
             temp_obj = cls(**obj)
         except Exception as e:
-            raise Exception(f"Failed to create {cls} object from {obj}")
+            raise Exception(
+                f"Failed to create {cls} object from {obj}"
+            ) from e
 
         class_key_value = temp_obj._class_key_field
         if class_key_value is None:

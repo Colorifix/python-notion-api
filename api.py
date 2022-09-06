@@ -31,7 +31,8 @@ from notion_integration.api.models.configurations import (
 
 from notion_integration.api.models.iterators import (
     PropertyItemIterator,
-    RelationPropertyItemIterator
+    # RelationPropertyItemIterator,
+    create_property_iterator
 )
 
 from notion_integration.api.models.filters import FilterItem
@@ -96,24 +97,18 @@ class NotionPage:
                 prop_type = self.database.properties[prop_name].config_type
                 prop_id = self.database.properties[prop_name].config_id
 
-                iterator = PropertyItemIterator.from_generator(
+                iterator = create_property_iterator(
                     generator,
                     prop_type,
                     prop_id
                 )
 
-                # iterator = PropertyItemIterator(
-                #     generator,
-                #     prop_type,
-                #     prop_id
-                # )
-
                 return iterator
 
             elif isinstance(ret, PropertyItem):
                 return ret
-            else:
-                raise TypeError("Returned property is of an unknown type")
+        else:
+            raise TypeError("Returned property is of an unknown type")
 
     def set(self, prop_name: str, value: Any) -> None:
         """Wrapper for 'Update page' action.
@@ -177,7 +172,7 @@ class NotionPage:
         for prop_name in properties:
             prop = self.get(prop_name)
 
-            if isinstance(prop, RelationPropertyItemIterator):
+            if prop.prop_type == "relation":
                 if include_rels:
                     vals[prop_name] = prop.all()
             else:
@@ -560,7 +555,7 @@ class NotionAPI:
             )
 
             for item in response.results:
-                yield item
+                yield item, response.property_item
 
             has_more = response.has_more
             cursor = response.next_cursor

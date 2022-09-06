@@ -165,15 +165,17 @@ class TestPage(_TestBase):
         )
         self.assertIsNotNone(new_page)
 
-    # def test_get_rollup(self):
-    #     self.new_page.set("Text", "foo")
-    #     self.new_page.set("Relation", [self.new_page.page_id])
-    #     self.assertEqual(
-    #         self.new_page.get("Relation").value[0],
-    #         self.new_page.page_id
-    #     )
-    #     rollup = self.new_page.get("Rollup")
-    #     breakpoint()
+
+class TestRollups(_TestBase):
+    @classmethod
+    def extra_setup(cls):
+        cls.number_page_id = "25e800a118414575ab30a8dc42689b74"
+
+    def test_number_rollup(self):
+        number_page = self.api.get_page(self.number_page_id)
+
+        num = number_page.get("Number rollup")
+        self.assertEqual(num.value, 10)
 
 
 class TestDatabase(_TestBase):

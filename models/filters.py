@@ -179,14 +179,3 @@ def and_filter(filters: List[FilterItem]):
 
 AndFilter.update_forward_refs()
 OrFilter.update_forward_refs()
-
-if __name__ == "__main__":
-    o = or_filter([RichTextFilter(property='bar', equals='foo')])
-    a = and_filter([
-        RichTextFilter(property='bar', equals='foo'),
-        or_filter([
-            RichTextFilter(property='baz', equals='foo'),
-            RichTextFilter(property='foo', equals='foo')
-        ])
-    ])
-    print(a)
