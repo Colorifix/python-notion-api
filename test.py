@@ -61,6 +61,11 @@ class TestCore(_TestBase):
         )
         self.assertIsNotNone(new_page)
 
+    def test_get_page(self):
+        test_page = 'e439b7a7296d45b98805f24c9cfc2115'
+        page = self.api.get_page(page_id=test_page)
+        self.assertIsInstance(page.to_dict(), dict)
+
 
 class TestPage(_TestBase):
     @classmethod
@@ -100,7 +105,7 @@ class TestPage(_TestBase):
         self.new_page.set("Date", self.TEST_DATE)
         self.assertTrue(
             abs(
-                self.new_page.get("Date").value.timestamp()
+                self.new_page.get("Date").value.start.timestamp()
                 - self.TEST_DATE.timestamp()
             ) < 60000
         )
@@ -170,12 +175,19 @@ class TestRollups(_TestBase):
     @classmethod
     def extra_setup(cls):
         cls.number_page_id = "25e800a118414575ab30a8dc42689b74"
+        cls.date_page_id = "e38bb90faf8a436895f089fed2446cc6"
 
     def test_number_rollup(self):
         number_page = self.api.get_page(self.number_page_id)
 
         num = number_page.get("Number rollup")
         self.assertEqual(num.value, 10)
+
+    def test_date_rollup(self):
+        date_page = self.api.get_page(self.date_page_id)
+
+        date = date_page.get("Date rollup")
+        self.assertIsInstance(date.value.start, datetime)
 
 
 class TestDatabase(_TestBase):

@@ -134,7 +134,7 @@ database.create_page(properties={
 
 Currently only supported for inividual properties.
 
-You can create a page in a database and set the properties of the new page. Not all property types are currently supported (files, status, rollups are not supported). 
+You can create a page in a database and set the properties of the new page. Formuas are not supported.
 
 ```python
 page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')

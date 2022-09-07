@@ -172,7 +172,7 @@ class NotionPage:
         for prop_name in properties:
             prop = self.get(prop_name)
 
-            if prop.prop_type == "relation":
+            if prop.property_type == "relation":
                 if include_rels:
                     vals[prop_name] = prop.all()
             else:

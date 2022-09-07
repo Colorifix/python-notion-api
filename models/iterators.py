@@ -1,15 +1,9 @@
+from notion_integration.api.models.common import DateObject
+
 from notion_integration.api.models.properties import PropertyItem
-from notion_integration.api.models.fields import (
-    typeField, idField
-)
-from typing import Optional
 
 
 class PropertyItemIterator:
-
-    property_type: Optional[str] = typeField
-    property_id: Optional[str] = idField
-
     @property
     def value(self):
         return self.all()
@@ -18,6 +12,7 @@ class PropertyItemIterator:
         self.generator = generator
         self.property_type = property_type
         self.property_id = property_id
+        self.cache = None
 
     def __iter__(self):
         return self
@@ -63,7 +58,7 @@ class RollupPropertyItemIterator(PropertyItemIterator):
         elif prop_type == "number":
             return prop["rollup"]["number"]
         elif prop_type == "date":
-            return prop["rollup"]["date"]
+            return DateObject(**prop["rollup"]["date"])
         else:
             raise ValueError("Got an unknown rollup type: '{prop_type}'")
 

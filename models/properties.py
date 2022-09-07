@@ -1,6 +1,6 @@
-from typing import Optional, List, Literal, Dict
+from typing import Optional, List
 
-from pydantic import Field, BaseModel
+from pydantic import Field
 
 from notion_integration.api.models.fields import (
     idField, typeField
@@ -17,18 +17,13 @@ from notion_integration.api.models.common import (
 
 from notion_integration.api.models.values import (
     FormulaValue,
-    PageReferenceValue,
-    RollupValue
+    PageReferenceValue
 )
 
 from notion_integration.api.models.objects import (
     User,
     NotionObject
 )
-
-# from notion_integration.api.models.paginations import (
-#     PropertyItemPagination
-# )
 
 
 class PropertyItem(NotionObject):
@@ -142,7 +137,7 @@ class DatePropertyItem(PropertyItem):
     @property
     def value(self):
         if self.date is not None:
-            return self.date.start
+            return self.date
 
 
 class FormulaPropertyItem(PropertyItem):
@@ -165,57 +160,6 @@ class RelationPropertyItem(PropertyItem):
     @property
     def value(self):
         return self.relation.page_id
-
-
-class RollupPropertyItem(BaseModel):
-    rollup_id: str = idField
-    next_url: Optional[str]
-    rollup_type: Literal["rollup"] = typeField
-
-
-class Rollup(BaseModel):
-    function: str
-    rollup_type: str = typeField
-
-
-class NumberRollup(Rollup):
-    number: float
-
-
-class DateRollup(Rollup):
-    date: str
-
-
-class ArrayRollup(Rollup):
-    pass
-
-
-class IncompleteRollup(Rollup):
-    incomplete: Dict
-
-
-class UnsupportedRollup(Rollup):
-    unsupported: Dict
-
-
-class NumberRollupPropertyItem(RollupPropertyItem):
-    rollup: NumberRollup
-
-
-class DateRollupPropertyItem(RollupPropertyItem):
-    rollup: DateRollup
-
-
-class ArrayRollupPropertyItem(RollupPropertyItem):
-    rollup: ArrayRollup
-
-
-class IncompleteRollupPropertyItem(RollupPropertyItem):
-    rollup: IncompleteRollup
-
-
-class UnsupportedRollupPropertyItem(RollupPropertyItem):
-    rollup: UnsupportedRollup
 
 
 class PeoplePropertyItem(PropertyItem):
