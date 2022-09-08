@@ -1,3 +1,5 @@
+from loguru import logger
+
 import unittest
 import os
 

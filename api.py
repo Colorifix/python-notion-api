@@ -2,7 +2,7 @@ from typing import Union, Any, Literal, Dict, Optional, Type, Generator, List
 
 from pydantic import BaseModel
 
-import logging
+from loguru import logger
 import json
 
 from requests import Session
@@ -40,8 +40,6 @@ from notion_integration.api.models.filters import FilterItem
 from notion_integration.api.models.sorts import Sort
 
 from notion_integration.api.models.values import generate_value, PropertyValue
-
-log = logging.getLogger(__name__)
 
 
 class NotionPage:
@@ -416,7 +414,7 @@ class NotionAPI:
         if response.status_code == 200:
             return cast_cls.from_obj(response.json())
         else:
-            log.error(
+            logger.error(
                 f"Request to {url} failed:"
                 f"\n{response.status_code}\n{response.text}"
             )

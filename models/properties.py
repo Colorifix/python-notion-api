@@ -1,3 +1,5 @@
+from loguru import logger
+
 from typing import Optional, List
 
 from pydantic import Field
@@ -148,7 +150,11 @@ class FormulaPropertyItem(PropertyItem):
 
     @property
     def value(self):
-        return getattr(self.formula, self.formula.formula_type)
+        val = getattr(self.formula, self.formula.formula_type)
+        logger.warning(
+            f'Returning formula value {val}, which might be incorrect'
+        )
+        return val
 
 
 class RelationPropertyItem(PropertyItem):
