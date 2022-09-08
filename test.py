@@ -178,6 +178,7 @@ class TestRollups(_TestBase):
     def extra_setup(cls):
         cls.number_page_id = "25e800a118414575ab30a8dc42689b74"
         cls.date_page_id = "e38bb90faf8a436895f089fed2446cc6"
+        cls.empty_rollup_page_id = "2b5efae5bad24df884b4f953e3788b64"
 
     def test_number_rollup(self):
         number_page = self.api.get_page(self.number_page_id)
@@ -190,6 +191,11 @@ class TestRollups(_TestBase):
 
         date = date_page.get("Date rollup")
         self.assertIsInstance(date.value.start, datetime)
+
+    def test_empty_rollup(self):
+        page = self.api.get_page(self.empty_rollup_page_id)
+        num = page.get("Number rollup")
+        self.assertIsNone(num.value)
 
 
 class TestDatabase(_TestBase):
