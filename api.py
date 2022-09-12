@@ -31,7 +31,6 @@ from notion_integration.api.models.configurations import (
 
 from notion_integration.api.models.iterators import (
     PropertyItemIterator,
-    # RelationPropertyItemIterator,
     create_property_iterator
 )
 
@@ -73,7 +72,7 @@ class NotionPage:
 
     @property
     def page_id(self) -> str:
-        return self._page_id
+        return self._page_id.replace("-", "")
 
     def get(self, prop_name: str) -> Union[PropertyItemIterator, PropertyItem]:
         """Wrapper for 'Retrieve a page property item' action.
@@ -147,7 +146,13 @@ class NotionPage:
         """
         props = {}
         for prop_name in self._object.properties:
-            props[prop_name] = self.get(prop_name)
+            try:
+                props[prop_name] = self.get(prop_name)
+            except KeyError:
+                logger.info(
+                    f"Failed to get {prop_name} while getting properties of"
+                    " a page. Might be a backref relation."
+                )
 
         return props
 
@@ -213,7 +218,7 @@ class NotionDatabase:
 
     @property
     def database_id(self) -> str:
-        return self._database_id
+        return self._database_id.replace("-", "")
 
     def query(self,
               filters: Optional[FilterItem] = None,

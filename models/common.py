@@ -1,6 +1,6 @@
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, Union
 
-from datetime import datetime
+from datetime import datetime, date
 
 from pydantic import BaseModel
 
@@ -100,8 +100,8 @@ class StatusObject(BaseModel):
 
 
 class DateObject(BaseModel):
-    start: datetime
-    end: Optional[datetime]
+    start: Union[datetime, date]
+    end: Optional[Union[datetime, date]]
     time_zone: Optional[str]
 
 
