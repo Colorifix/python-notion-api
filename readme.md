@@ -153,7 +153,7 @@ Each property type is wrapped into it's own class defined in `api.models.propert
 
 ```python
 page.get('Prroperty name').value
-page.get('Relation property').all()
+page.get('Relation property').value
 
 for value in page.get('Relation property'):
     print(value)

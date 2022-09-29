@@ -1,44 +1,24 @@
-from typing import Union, Any, Literal, Dict, Optional, Type, Generator, List
-
-from pydantic import BaseModel
+import json
+from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
 
 from loguru import logger
-import json
-
+from notion_integration.api.models.common import (FileObject,
+                                                  ParentObject)
+from notion_integration.api.models.configurations import (
+    NotionPropertyConfiguration, RelationPropertyConfiguration)
+from notion_integration.api.models.filters import FilterItem
+from notion_integration.api.models.iterators import (PropertyItemIterator,
+                                                     create_property_iterator)
+from notion_integration.api.models.objects import (Block, Database,
+                                                   NotionObjectBase,
+                                                   Pagination, User)
+from notion_integration.api.models.properties import NotionObject, PropertyItem
+from notion_integration.api.models.sorts import Sort
+from notion_integration.api.models.values import PropertyValue, generate_value
+from pydantic import BaseModel
 from requests import Session
 from requests.adapters import HTTPAdapter
-
 from requests.packages.urllib3.util.retry import Retry
-
-from notion_integration.api.models.common import ParentObject, FileObject, File
-
-from notion_integration.api.models.objects import (
-    Database,
-    Pagination,
-    NotionObjectBase,
-    User
-)
-
-from notion_integration.api.models.properties import (
-     PropertyItem,
-     NotionObject
-)
-
-from notion_integration.api.models.configurations import (
-    RelationPropertyConfiguration,
-    NotionPropertyConfiguration
-)
-
-from notion_integration.api.models.iterators import (
-    PropertyItemIterator,
-    create_property_iterator
-)
-
-from notion_integration.api.models.filters import FilterItem
-
-from notion_integration.api.models.sorts import Sort
-
-from notion_integration.api.models.values import generate_value, PropertyValue
 
 
 class NotionPage:
@@ -74,6 +54,23 @@ class NotionPage:
     def page_id(self) -> str:
         return self._page_id.replace("-", "")
 
+    def add_blocks(self, content: List[Block]):
+        """Wrapper for add new blocks to an existing page.
+
+        Args:
+            text: Content of the new block.
+        """
+        data = {
+            "children": [
+                block.dict(by_alias=True, exclude_unset=True)
+                for block in content
+            ]
+        }
+        return self._api._patch(
+            endpoint=f'blocks/{self.page_id}/children',
+            data=json.dumps(data)
+        )
+
     def get(self, prop_name: str) -> Union[PropertyItemIterator, PropertyItem]:
         """Wrapper for 'Retrieve a page property item' action.
 
@@ -82,6 +79,7 @@ class NotionPage:
         """
         if prop_name in self._object.properties:
             prop_id = self._object.properties[prop_name].property_id
+            prop_type = self._object.properties[prop_name].property_type
             ret = self._api._get(
                 endpoint=f'pages/{self._page_id}/properties/{prop_id}'
             )
@@ -90,10 +88,6 @@ class NotionPage:
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
-
-                prop_type = self.database.properties[prop_name].config_type
-                prop_id = self.database.properties[prop_name].config_id
-
                 iterator = create_property_iterator(
                     generator,
                     prop_type,
@@ -116,7 +110,7 @@ class NotionPage:
         """
 
         if prop_name in self._object.properties:
-            prop_type = self.database.properties[prop_name].config_type
+            prop_type = self._object.properties[prop_name].property_type
 
             value = generate_value(prop_type, value)
             request = NotionPage.PatchRequest(
@@ -146,13 +140,7 @@ class NotionPage:
         """
         props = {}
         for prop_name in self._object.properties:
-            try:
-                props[prop_name] = self.get(prop_name)
-            except KeyError:
-                logger.info(
-                    f"Failed to get {prop_name} while getting properties of"
-                    " a page. Might be a backref relation."
-                )
+            props[prop_name] = self.get(prop_name)
 
         return props
 
@@ -177,7 +165,7 @@ class NotionPage:
 
             if prop.property_type == "relation":
                 if include_rels:
-                    vals[prop_name] = prop.all()
+                    vals[prop_name] = prop.value
             else:
                 if not rels_only:
                     vals[prop_name] = prop.value

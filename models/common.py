@@ -1,41 +1,34 @@
-from typing import Literal, Optional, Dict, Union
+from datetime import date, datetime
+import os
+from typing import Dict, Literal, Optional, Union
 
-from datetime import datetime, date
+from notion_integration.api.models.fields import idField, typeField
+from notion_integration.gdrive import GDrive
+from pydantic import (AnyUrl, BaseModel, FilePath)
 
-from pydantic import BaseModel
 
-from notion_integration.api.models.fields import (
-    typeField, idField
-)
+class LinkObject(BaseModel):
+    link_type: Literal['url'] = typeField
+    url: AnyUrl
 
 
 class TextObject(BaseModel):
     content: str
-    link: Optional[Dict]
-
-
-class RichTextObject(BaseModel):
-    plain_text: str
-    href: Optional[str]
-    annotations: Optional[Dict]
-    rich_text_type: Literal["text", "mention", "equation"] = typeField
-    text: Optional[TextObject]
-
-    @classmethod
-    def from_str(cls, plain_text: str):
-        text_obj = TextObject(content=plain_text)
-        return RichTextObject(
-            plain_text=plain_text,
-            href=None,
-            annotations=dict(),
-            type='text',
-            text=text_obj
-        )
+    link: Optional[LinkObject]
 
 
 class File(BaseModel):
     name: Optional[str]
     url: str
+
+    @classmethod
+    def from_file_path(cls, file_path: str):
+        gdrive = GDrive()
+        file = gdrive.upload_file(file_path=file_path)
+        return cls(
+            name=file.get("title"),
+            url=file.get("alternateLink")
+        )
 
 
 class ExternalFile(BaseModel):
@@ -73,6 +66,37 @@ class FileObject(BaseModel):
         return cls(
             type="external",
             external=ExternalFile(url=url)
+        )
+
+
+class RichTextObject(BaseModel):
+    plain_text: str
+    href: Optional[str]
+    annotations: Optional[Dict]
+    rich_text_type: Literal["text", "mention", "equation"] = typeField
+    text: Optional[TextObject]
+
+    @classmethod
+    def from_str(cls, plain_text: str):
+        text_obj = TextObject(content=plain_text)
+        return RichTextObject(
+            plain_text=plain_text,
+            href=None,
+            annotations=dict(),
+            type='text',
+            text=text_obj
+        )
+
+    @classmethod
+    def from_file(cls, file=File):
+        text_obj = TextObject(
+            content=file.name,
+            link=LinkObject(type='url', url=file.url)
+        )
+        return RichTextObject(
+            plain_text=text_obj.content,
+            type='text',
+            text=text_obj
         )
 
 

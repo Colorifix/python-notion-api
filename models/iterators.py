@@ -4,14 +4,11 @@ from notion_integration.api.models.properties import PropertyItem
 
 
 class PropertyItemIterator:
-    @property
-    def value(self):
-        return self.all()
-
     def __init__(self, generator, property_type, property_id):
         self.generator = generator
         self.property_type = property_type
         self.property_id = property_id
+        self._value = None
         self.cache = None
 
     def __iter__(self):
@@ -20,7 +17,13 @@ class PropertyItemIterator:
     def __next__(self):
         return next(self.generator)
 
-    def all(self):
+    @property
+    def value(self):
+        if self._value is None:
+            self._value = self._get_value()
+        return self._value
+
+    def _get_value(self):
         return [
             PropertyItem.from_obj(item.dict()).value
             for item, _ in self.generator
@@ -28,9 +31,11 @@ class PropertyItemIterator:
 
 
 class TextPropertyItemIterator(PropertyItemIterator):
-    @property
-    def value(self):
-        return "".join([item for item in self.all()])
+    def _get_value(self):
+        return "".join([
+            PropertyItem.from_obj(item.dict()).value
+            for item, _ in self.generator
+        ])
 
 
 class ArrayPropertyItemIterator(PropertyItemIterator):
@@ -38,8 +43,7 @@ class ArrayPropertyItemIterator(PropertyItemIterator):
 
 
 class RollupPropertyItemIterator(PropertyItemIterator):
-    @property
-    def value(self):
+    def _get_value(self):
         items = []
         last_prop = None
 

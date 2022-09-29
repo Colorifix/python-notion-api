@@ -62,7 +62,8 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
         "property_item": "PropertyItem",
         "database": "Database",
         "page": "Page",
-        "user": "User"
+        "user": "User",
+        "block": "Block"
     }
 
     @property
@@ -110,7 +111,8 @@ class Pagination(NotionObject):
 
     _class_map = {
         "property_item": "PropertyItemPagination",
-        "page": "PagePagination"
+        "page": "PagePagination",
+        "block": "BlockPagination"
     }
 
     @property
@@ -141,6 +143,7 @@ class Database(NotionObject):
 
 class PropertyObject(BaseModel):
     property_id: str = idField
+    property_type: str = typeField
 
 
 class Page(NotionObject):
@@ -156,3 +159,27 @@ class Page(NotionObject):
                           Dict[str, Union[str, FileObject]]]]
     properties: Dict[str, PropertyObject]
     parent: ParentObject
+
+
+class Block(NotionObject):
+    block_type: Literal[
+        "paragraph", "embed"
+    ] = typeField
+
+    _class_map = {
+        "paragraph": "ParagraphBlock",
+        "embed": "EmbedBlock"
+    }
+
+    id: Optional[str] = idField
+    parent: Optional[ParentObject]
+    created_time: Optional[datetime]
+    last_edited_time: Optional[datetime]
+    created_by: Optional[User]
+    last_edited_by: Optional[User]
+    has_children: Optional[bool]
+    archived: Optional[bool]
+
+    @property
+    def _class_key_field(self):
+        return self.block_type
