@@ -148,7 +148,7 @@ class TestPage(_TestBase):
     def test_set_relation(self):
         self.new_page.set("Relation", [self.new_page.page_id])
         self.assertEqual(
-            self.new_page.get("Relation").value[0],
+            self.new_page.get("Relation").value[0].replace('-', ''),
             self.new_page.page_id
         )
 

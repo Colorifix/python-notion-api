@@ -38,7 +38,8 @@ from notion_integration.api.models.objects import (
     Pagination,
     Database,
     PropertyObject,
-    Page
+    Page,
+    Block
 )
 
 
@@ -129,6 +130,7 @@ from notion_integration.api.models.filters import (
 
 from notion_integration.api.models.sorts import Sort
 
+from notion_integration.api.models.blocks import ParagraphBlock
 
 __all__ = [
     "typeField",
@@ -165,6 +167,7 @@ __all__ = [
     "Database",
     "PropertyObject",
     "Page",
+    "Block",
 
     "PropertyItem",
     "TitlePropertyItem",
@@ -235,5 +238,7 @@ __all__ = [
     "or_filter",
     "and_filter",
 
-    "Sort"
+    "Sort",
+
+    "ParagraphBlock"
 ]

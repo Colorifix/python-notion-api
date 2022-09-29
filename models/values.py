@@ -1,24 +1,17 @@
+from datetime import date, datetime
+from typing import ClassVar, List, Optional, Tuple, Union
 from uuid import UUID
 
-from typing import Union, Optional, List, ClassVar, Dict, Type, Tuple
-from typing_extensions import Annotated
-
-from datetime import datetime, date
-
-from pydantic import BaseModel, Field, root_validator, parse_obj_as
-from pydantic import ValidationError
-
-from notion_integration.api.models.fields import (
-    idField,
-    typeField
-)
-
-from notion_integration.api.models.common import (
-    FileObject, RichTextObject, SelectObject, StatusObject, DateObject, File,
-    RelationObject
-)
-
+from notion_integration.api.models.common import (DateObject, File, FileObject,
+                                                  RelationObject,
+                                                  RichTextObject, SelectObject,
+                                                  StatusObject)
+from notion_integration.api.models.fields import idField, typeField
 from notion_integration.api.models.objects import User
+from notion_integration.gdrive import GDrive
+from pydantic import (BaseModel, Field, ValidationError, parse_obj_as,
+                      root_validator, AnyUrl, FilePath)
+from typing_extensions import Annotated
 
 
 def excluded(field_type):
@@ -141,8 +134,8 @@ class MultiselectPropertyValue(PropertyValue):
 
 class DatePropertyValue(PropertyValue):
     _type_map = {
-        date: 'validate_date',
         datetime: 'validate_date',
+        date: 'validate_date',
         str: 'validate_str',
         DateObject: 'leave_unchanged',
         Tuple[datetime, datetime]:
@@ -214,6 +207,7 @@ class PeoplePropertyValue(PropertyValue):
 
 class FilePropertyValue(PropertyValue):
     _type_map = {
+        FilePath: "validate_file_path",
         List[File]: "validate_file"
     }
 
@@ -243,12 +237,22 @@ class CheckboxPropertyValue(PropertyValue):
 
 class URLPropertyValue(PropertyValue):
     _type_map = {
-        str: "leave_unchanged"
+        AnyUrl: "leave_unchanged",
+        FilePath: "validate_file_path",
+        File: "validate_file"
     }
     _set_field = 'url'
 
-    init: excluded(Optional[str])
+    init: excluded(Optional[Union[AnyUrl, FilePath, File]])
     url: str
+
+    @classmethod
+    def validate_file_path(cls, init: FilePath):
+        return File.from_file_path(init).url
+
+    @classmethod
+    def validate_file(cls, init: File):
+        return init.url
 
 
 class EmailPropertyValue(PropertyValue):
