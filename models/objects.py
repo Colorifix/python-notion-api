@@ -141,6 +141,7 @@ class Database(NotionObject):
 
 class PropertyObject(BaseModel):
     property_id: str = idField
+    property_type: str = typeField
 
 
 class Page(NotionObject):

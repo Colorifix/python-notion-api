@@ -82,6 +82,7 @@ class NotionPage:
         """
         if prop_name in self._object.properties:
             prop_id = self._object.properties[prop_name].property_id
+            prop_type = self._object.properties[prop_name].property_type
             ret = self._api._get(
                 endpoint=f'pages/{self._page_id}/properties/{prop_id}'
             )
@@ -90,10 +91,6 @@ class NotionPage:
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
-
-                prop_type = self.database.properties[prop_name].config_type
-                prop_id = self.database.properties[prop_name].config_id
-
                 iterator = create_property_iterator(
                     generator,
                     prop_type,
@@ -116,7 +113,7 @@ class NotionPage:
         """
 
         if prop_name in self._object.properties:
-            prop_type = self.database.properties[prop_name].config_type
+            prop_type = self._object.properties[prop_name].property_type
 
             value = generate_value(prop_type, value)
             request = NotionPage.PatchRequest(
@@ -146,13 +143,7 @@ class NotionPage:
         """
         props = {}
         for prop_name in self._object.properties:
-            try:
-                props[prop_name] = self.get(prop_name)
-            except KeyError:
-                logger.info(
-                    f"Failed to get {prop_name} while getting properties of"
-                    " a page. Might be a backref relation."
-                )
+            props[prop_name] = self.get(prop_name)
 
         return props
 
