@@ -8,7 +8,7 @@ from pydantic import (AnyUrl, BaseModel, FilePath)
 
 
 class LinkObject(BaseModel):
-    link_type: Literal['url'] = typeField
+    link_type: Optional[Literal['url']] = typeField
     url: AnyUrl
 
 
@@ -22,9 +22,9 @@ class File(BaseModel):
     url: str
 
     @classmethod
-    def from_file_path(cls, file_path: str):
+    def from_file_path(cls, file_path: str, parent_id=None):
         gdrive = GDrive()
-        file = gdrive.upload_file(file_path=file_path)
+        file = gdrive.upload_file(file_path=file_path, parent_id=parent_id)
         return cls(
             name=file.get("title"),
             url=file.get("alternateLink")
