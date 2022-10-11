@@ -32,6 +32,9 @@ class NotionPage:
     class PatchRequest(BaseModel):
         properties: Dict[str, PropertyValue]
 
+    special_properties = {}  # Map from property names to function names.
+                             # For use in subclasses
+
     def __init__(self, api, page_id, database=None):
         self._api = api
         self._page_id = page_id
@@ -72,7 +75,28 @@ class NotionPage:
         )
 
     def get(self, prop_name: str) -> Union[PropertyItemIterator, PropertyItem]:
+        """
+        First checks if the property is 'special', if so, will call the special
+        function to get that property value.
+        If not, gets the property through the api.
+
+        Args:
+            prop_name: Name of the property to retrieve.
+        """
+        if prop_name in self.special_properties:
+            # For subclasses of NotionPage
+            # Any special properties should have an associated function
+            # in the subclass, and a mapping from the property name
+            # to the function name in self.special_properties
+            return getattr(self, self.special_properties[prop_name])()
+        else:
+            return self._direct_get(prop_name)
+
+    def _direct_get(self, prop_name: str) -> Union[PropertyItemIterator,
+                                                   PropertyItem]:
         """Wrapper for 'Retrieve a page property item' action.
+
+        Will return whatever is retrieved from the API, no special cases.
 
         Args:
             prop_name: Name of the property to retrieve.
@@ -211,17 +235,17 @@ class NotionDatabase:
     def query(self,
               filters: Optional[FilterItem] = None,
               sorts: Optional[List[Sort]] = None,
+              page_cast=NotionPage
               ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
         Retrieves all pages belonging to the database.
 
         Args:
-            sort_filter: dictionary with any filtering and sorting parameters.
-            Should match the formats described here:
-            https://developers.notion.com/reference/post-database-query
-            https://developers.notion.com/reference/post-database-query-filter
-            https://developers.notion.com/reference/post-database-query-sort
+            filters:
+            sorts:
+            page_cast: A subclass of a NotionPage. Allows custom
+            property retrieval
 
         """
         data = {}
@@ -245,7 +269,7 @@ class NotionDatabase:
             endpoint=f'databases/{self._database_id}/query',
             data=data
         ):
-            yield NotionPage(
+            yield page_cast(
                 api=self._api, database=self, page_id=item.page_id
             )
 
@@ -559,13 +583,15 @@ class NotionAPI:
         """
         return NotionDatabase(self, database_id)
 
-    def get_page(self, page_id) -> NotionPage:
+    def get_page(self, page_id, page_cast=NotionPage) -> NotionPage:
         """ Wrapper for 'Retrieve a dpage' action.
 
         Args:
             page_id: Id of the database to fetch.
+            page_cast: A subclass of a NotionPage. Allows custom
+            property retrieval
         """
-        return NotionPage(self, page_id)
+        return page_cast(self, page_id)
 
     def me(self) -> User:
         return self._get("users/me")

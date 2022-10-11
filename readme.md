@@ -159,6 +159,63 @@ for value in page.get('Relation property'):
     print(value)
 ```
 
+### Custom page properties
+In some cases, we may not want the values directly returned by the API. 
+For example, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
+
+To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property and define the mapping from Notion property names to the function names. 
+
+```python
+from notion_integration.api.api import NotionPage
+from notion_integration.api.models import RichTextPropertyItem, RichTextObject
+
+class MyPage(NotionPage):
+    # Use this dictionary to map the property names to functions
+    # Being explicit about the mapping so we don't restrict the property names in Notion
+    special_properties = {
+        'Value': 'special_value'
+    }
+    
+    
+    def special_value(self):
+    
+        # self.get('Value') would just loop back here, 
+        # so use self._direct_get to retrieve the value returned by the API
+        x = self._direct_get('Value').value
+        
+        # Then do whatever processing is required
+        # Should return a PropertyItem to be compatible with downstream functions
+        if x == 1:
+            return RichTextPropertyItem(rich_text=RichTextObject(
+                plain_text='One', type='text'))
+        else:
+            return RichTextPropertyItem(rich_text=RichTextObject(
+                plain_text='Number unknown', type='text'))
+                
+```
+
+This page class can be passed when querying a database or getting a page. 
+
+```python 
+page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
+                    page_cast=MyPage)     
+                       
+
+for page in database.query(page_cast=MyPage, filters=NumberFilter(property='Value', equals=1)):
+    print('Custom processing:', page.get('Value').value)
+    print('Raw value:', page._direct_get('Value').value)
+    break
+    
+## output
+# Custom processing: One
+# Raw value: 1.0
+       
+```
+
+
+
 ## Problems with rollups and formulas
 These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect. 
-There is no error or warning when this occurs, so be careful!
+There is no error or warning when this occurs, so be careful!  
+
+A subclass of NotionPage can be used to fully recreate rollups and formulas (see above).  
