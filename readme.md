@@ -161,9 +161,9 @@ for value in page.get('Relation property'):
 
 ### Custom page properties
 In some cases, we may not want the values directly returned by the API. 
-For example, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
+In particular, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
 
-To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property and define the mapping from Notion property names to the function names. 
+To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyItem` or `PropertyItemIterator`) and define the mapping from Notion property names to the function names. 
 
 ```python
 from notion_integration.api.api import NotionPage
@@ -177,7 +177,7 @@ class MyPage(NotionPage):
     }
     
     
-    def special_value(self):
+    def special_value(self) -> RichTextPropertyItem:
     
         # self.get('Value') would just loop back here, 
         # so use self._direct_get to retrieve the value returned by the API

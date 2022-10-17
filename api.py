@@ -88,6 +88,7 @@ class NotionPage:
             # Any special properties should have an associated function
             # in the subclass, and a mapping from the property name
             # to the function name in self.special_properties
+            # Those functions must return PropertyItemIterator or PropertyItem
             return getattr(self, self.special_properties[prop_name])()
         else:
             return self._direct_get(prop_name)
@@ -235,7 +236,7 @@ class NotionDatabase:
     def query(self,
               filters: Optional[FilterItem] = None,
               sorts: Optional[List[Sort]] = None,
-              page_cast=NotionPage
+              cast_cls=NotionPage
               ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
@@ -244,7 +245,7 @@ class NotionDatabase:
         Args:
             filters:
             sorts:
-            page_cast: A subclass of a NotionPage. Allows custom
+            cast_cls: A subclass of a NotionPage. Allows custom
             property retrieval
 
         """
@@ -269,7 +270,7 @@ class NotionDatabase:
             endpoint=f'databases/{self._database_id}/query',
             data=data
         ):
-            yield page_cast(
+            yield cast_cls(
                 api=self._api, database=self, page_id=item.page_id
             )
 
