@@ -89,7 +89,10 @@ class NotionPage:
             # in the subclass, and a mapping from the property name
             # to the function name in self.special_properties
             # Those functions must return PropertyItemIterator or PropertyItem
-            return getattr(self, self.special_properties[prop_name])()
+            attr = getattr(self, self.special_properties[prop_name])()
+            assert isinstance(attr, PropertyItem) or \
+                   isinstance(attr, PropertyItemIterator)
+            return attr
         else:
             return self._direct_get(prop_name)
 
