@@ -1,12 +1,10 @@
 import re
-
-from typing import Optional, Dict, Literal, Union, List
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Extra, root_validator
 
-from notion_integration.api.models.fields import (
-        propertyField, andField, orField
-)
+from notion_integration.api.models.fields import (andField, orField,
+                                                  propertyField)
 
 
 class DateFilterCondition(BaseModel):
@@ -92,9 +90,7 @@ class FormulaFilterCondition(BaseModel):
     date: Optional[DateFilterCondition]
 
 
-class PropertyFilter(BaseModel, extra=Extra.ignore):
-    filter_property: str = propertyField
-
+class BaseFilter(BaseModel, extra=Extra.ignore):
     @root_validator(pre=True)
     def validate_values(cls, values):
         pattern = re.compile(r'(?<!^)(?=[A-Z])')
@@ -103,6 +99,10 @@ class PropertyFilter(BaseModel, extra=Extra.ignore):
         )
         values[field_name] = values
         return values
+
+
+class PropertyFilter(BaseFilter):
+    filter_property: str = propertyField
 
 
 class RichTextFilter(PropertyFilter):
@@ -149,8 +149,16 @@ class FormulaFilter(PropertyFilter):
     formula: FormulaFilterCondition
 
 
-class TimestampFilter(BaseModel):
-    timestamp: DateFilterCondition
+class TimestampFilter(BaseFilter):
+    timestamp: str
+
+
+class CreatedTimeFilter(TimestampFilter):
+    created_time: DateFilterCondition
+
+
+class LastEditedTimeFilter(TimestampFilter):
+    last_edited_time: DateFilterCondition
 
 
 FilterItem = Union[
