@@ -25,9 +25,8 @@ from notion_integration.api.models.common import (
 )
 
 from notion_integration.api.models.values import (
-    FormulaValue,
-    PageReferenceValue,
-    RollupValue,
+    FormulaPropertyValue,
+    RollupPropertyValue,
     PropertyValue
 )
 
@@ -37,7 +36,6 @@ from notion_integration.api.models.objects import (
     User,
     Pagination,
     Database,
-    PropertyObject,
     Page,
     Block
 )
@@ -46,9 +44,7 @@ from notion_integration.api.models.objects import (
 from notion_integration.api.models.properties import (
     PropertyItem,
     TitlePropertyItem,
-    # TitlePagination,
     RichTextPropertyItem,
-    # RichTextPagination,
     NumberPropertyItem,
     SelectPropertyItem,
     StatusPropertyItem,
@@ -56,11 +52,7 @@ from notion_integration.api.models.properties import (
     DatePropertyItem,
     FormulaPropertyItem,
     RelationPropertyItem,
-    # RelationPagination,
-    # RollupPropertyItem,
-    # RollupPagination,
     PeoplePropertyItem,
-    # PeoplePagination,
     FilesPropertyItem,
     CheckBoxPropertyItem,
     URLPropertyItem,
@@ -70,7 +62,7 @@ from notion_integration.api.models.properties import (
     CreatedByPropertyItem,
     LastEditedTimePropertyItem,
     LastEditedByPropertyItem,
-    # PropertyItemPagination
+    RollupPropertyItem
 )
 
 from notion_integration.api.models.paginations import (
@@ -156,9 +148,8 @@ __all__ = [
     "DateObject",
     "RelationObject",
 
-    "FormulaValue",
-    "PageReferenceValue",
-    "RollupValue",
+    "FormulaPropertyValue",
+    "RollupPropertyValue",
     "PropertyValue",
 
     "NotionObjectBase",
@@ -166,7 +157,6 @@ __all__ = [
     "User",
     "Pagination",
     "Database",
-    "PropertyObject",
     "Page",
     "Block",
 
@@ -180,7 +170,7 @@ __all__ = [
     "DatePropertyItem",
     "FormulaPropertyItem",
     "RelationPropertyItem",
-    # "RollupPropertyItem",
+    "RollupPropertyItem",
     "PeoplePropertyItem",
     "FilesPropertyItem",
     "CheckBoxPropertyItem",

@@ -35,8 +35,6 @@ class NotionObjectBase(BaseModel):
 
         class_name = cls._class_map.get(class_key_value, None)
         if class_name is None:
-            if class_key_value == 'rollup':
-                return None  # Not implemented
             raise ValueError(
                 f"Unknown object\n"
                 f"{temp_obj._class_key_field}: '{class_key_value}'"
@@ -141,11 +139,6 @@ class Database(NotionObject):
     is_inline: bool
 
 
-class PropertyObject(BaseModel):
-    property_id: str = idField
-    property_type: str = typeField
-
-
 class Page(NotionObject):
     _class_key_field = None
 
@@ -157,7 +150,7 @@ class Page(NotionObject):
     last_edited_by: User
     cover: Optional[Union[FileObject,
                           Dict[str, Union[str, FileObject]]]]
-    properties: Dict[str, PropertyObject]
+    properties: Dict[str, Dict]
     parent: ParentObject
 
 
