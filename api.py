@@ -7,8 +7,7 @@ from notion_integration.api.models.common import (FileObject,
 from notion_integration.api.models.configurations import (
     NotionPropertyConfiguration, RelationPropertyConfiguration)
 from notion_integration.api.models.filters import FilterItem
-from notion_integration.api.models.iterators import (PropertyItemIterator,
-                                                     create_property_iterator)
+from notion_integration.api.models.iterators import PropertyItemIterator
 from notion_integration.api.models.objects import (Block, Database,
                                                    NotionObjectBase,
                                                    Pagination, User)
@@ -90,7 +89,7 @@ class NotionPage:
             if prop_type == 'formula':
                 cache = False
             # Though rollups have the same problem as formulas, they
-            # are not fully supported yet and disabling cache is not 
+            # are not fully supported yet and disabling cache is not
             # allowed.
             if prop_type == 'rollup':
                 cache = True
@@ -99,7 +98,8 @@ class NotionPage:
                 return PropertyValue.from_property_item(obj)
 
             ret = self._api._get(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
+                endpoint=f'pages/{self._page_id}/properties/{prop_id}',
+                params={"page_size": 20}
             )
 
             if isinstance(ret, Pagination):
@@ -550,7 +550,7 @@ class NotionAPI:
         while has_more:
             params.update({
                 'start_cursor': cursor,
-                'page_size': 100
+                'page_size': 40
             })
 
             if cursor is None:
