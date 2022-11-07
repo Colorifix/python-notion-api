@@ -163,11 +163,12 @@ for value in page.get('Relation property'):
 In some cases, we may not want the values directly returned by the API. 
 In particular, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
 
-To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyItem` or `PropertyItemIterator`) and define the mapping from Notion property names to the function names. 
+To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyValue`) and define the mapping from Notion property names to the function names. 
 
 ```python
 from notion_integration.api.api import NotionPage
-from notion_integration.api.models import RichTextPropertyItem, RichTextObject
+from notion_integration.api.models import RichTextObject
+from notion_integration.api.models.values import RichTextPropertyValue
 
 class MyPage(NotionPage):
     # Use this dictionary to map the property names to functions
@@ -184,12 +185,12 @@ class MyPage(NotionPage):
         x = self._direct_get('Value').value
         
         # Then do whatever processing is required
-        # Should return a PropertyItem to be compatible with downstream functions
+        # Should return a PropertyValue to be compatible with downstream functions
         if x == 1:
-            return RichTextPropertyItem(rich_text=RichTextObject(
+            return RichTextPropertyValue(rich_text=RichTextObject(
                 plain_text='One', type='text'))
         else:
-            return RichTextPropertyItem(rich_text=RichTextObject(
+            return RichTextPropertyValue(rich_text=RichTextObject(
                 plain_text='Number unknown', type='text'))
                 
 ```
@@ -198,10 +199,10 @@ This page class can be passed when querying a database or getting a page.
 
 ```python 
 page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
-                    page_cast=MyPage)     
+                    cast_cls=MyPage)     
                        
 
-for page in database.query(page_cast=MyPage, filters=NumberFilter(property='Value', equals=1)):
+for page in database.query(cast_cls=MyPage, filters=NumberFilter(property='Value', equals=1)):
     print('Custom processing:', page.get('Value').value)
     print('Raw value:', page._direct_get('Value').value)
     break
