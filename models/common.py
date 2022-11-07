@@ -1,10 +1,10 @@
 from datetime import date, datetime
 import os
-from typing import Dict, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 from notion_integration.api.models.fields import idField, typeField
 from notion_integration.gdrive import GDrive
-from pydantic import (AnyUrl, BaseModel, FilePath)
+from pydantic import (AnyUrl, BaseModel)
 
 
 class LinkObject(BaseModel):
@@ -131,3 +131,19 @@ class DateObject(BaseModel):
 
 class RelationObject(BaseModel):
     relation_id: str = idField
+
+
+class FormulaObject(BaseModel):
+    formula_type: str = typeField
+    string: Optional[str]
+    number: Optional[float]
+    date: Optional[Union[datetime, date, DateObject]]
+    boolean: Optional[bool]
+
+
+class RollupObject(BaseModel):
+    rollup_type: str = typeField
+    function: str
+    array: Optional[List]
+    number: Optional[float]
+    date: Optional[DateObject]

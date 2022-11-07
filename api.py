@@ -7,8 +7,7 @@ from notion_integration.api.models.common import (FileObject,
 from notion_integration.api.models.configurations import (
     NotionPropertyConfiguration, RelationPropertyConfiguration)
 from notion_integration.api.models.filters import FilterItem
-from notion_integration.api.models.iterators import (PropertyItemIterator,
-                                                     create_property_iterator)
+from notion_integration.api.models.iterators import PropertyItemIterator
 from notion_integration.api.models.objects import (Block, Database,
                                                    NotionObjectBase,
                                                    Pagination, User)
@@ -38,7 +37,6 @@ class NotionPage:
     def __init__(self, api, page_id, database=None):
         self._api = api
         self._page_id = page_id
-        self._properties_cache = None
         self._object = None
         self.database = database
 
@@ -74,7 +72,7 @@ class NotionPage:
             data=json.dumps(data)
         )
 
-    def get(self, prop_name: str) -> Union[PropertyItemIterator, PropertyItem]:
+    def get(self, prop_name: str, cache: bool = True) -> PropertyValue:
         """
         First checks if the property is 'special', if so, will call the special
         function to get that property value.
@@ -90,42 +88,59 @@ class NotionPage:
             # to the function name in self.special_properties
             # Those functions must return PropertyItemIterator or PropertyItem
             attr = getattr(self, self.special_properties[prop_name])()
-            assert isinstance(attr, PropertyItem) or \
-                   isinstance(attr, PropertyItemIterator)
+            assert isinstance(attr, PropertyValue)
             return attr
         else:
-            return self._direct_get(prop_name)
+            return self._direct_get(prop_name=prop_name, cache=cache)
 
-    def _direct_get(self, prop_name: str) -> Union[PropertyItemIterator,
-                                                   PropertyItem]:
+    def _direct_get(self, prop_name: str, cache: bool = True) -> PropertyValue:
         """Wrapper for 'Retrieve a page property item' action.
 
         Will return whatever is retrieved from the API, no special cases.
 
         Args:
             prop_name: Name of the property to retrieve.
+            cache: Boolean to decide whether to return the info from the page
+                or query the API again.
         """
         if prop_name in self._object.properties:
-            prop_id = self._object.properties[prop_name].property_id
-            prop_type = self._object.properties[prop_name].property_type
+            prop = self._object.properties[prop_name]
+            obj = PropertyItem.from_obj(prop)
+
+            prop_id = obj.property_id
+            prop_type = obj.property_type
+
+            # We need to always query the API for formulas as otherwise we
+            # might not get the whole value.
+            if prop_type == 'formula':
+                cache = False
+            # Though rollups have the same problem as formulas, they
+            # are not fully supported yet and disabling cache is not
+            # allowed.
+            if prop_type == 'rollup':
+                cache = True
+
+            if (cache and not obj.has_more):
+                return PropertyValue.from_property_item(obj)
+
             ret = self._api._get(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
+                endpoint=f'pages/{self._page_id}/properties/{prop_id}',
+                params={"page_size": 20}
             )
 
             if isinstance(ret, Pagination):
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
-                iterator = create_property_iterator(
-                    generator,
-                    prop_type,
-                    prop_id
+                ret = obj.__class__(
+                    property_id=prop_id,
+                    property_type=prop_type,
+                    init=[getattr(item, prop_type) for item, _ in generator]
                 )
-
-                return iterator
+                return PropertyValue.from_property_item(ret)
 
             elif isinstance(ret, PropertyItem):
-                return ret
+                return PropertyValue.from_property_item(ret)
         else:
             raise TypeError("Returned property is of an unknown type")
 
@@ -138,7 +153,7 @@ class NotionPage:
         """
 
         if prop_name in self._object.properties:
-            prop_type = self._object.properties[prop_name].property_type
+            prop_type = self._object.properties[prop_name]["type"]
 
             value = generate_value(prop_type, value)
             request = NotionPage.PatchRequest(
@@ -163,14 +178,13 @@ class NotionPage:
 
     @property
     def properties(self) -> Dict[
-            str, Union[PropertyItemIterator, PropertyItem]]:
+            str, PropertyValue]:
         """Returns all properties of the page.
         """
-        props = {}
-        for prop_name in self._object.properties:
-            props[prop_name] = self.get(prop_name)
-
-        return props
+        return {
+            prop_name: self.get(prop_name)
+            for prop_name in self._object.properties
+        }
 
     def to_dict(self,
                 include_rels: bool = True,
@@ -562,7 +576,7 @@ class NotionAPI:
         while has_more:
             params.update({
                 'start_cursor': cursor,
-                'page_size': 100
+                'page_size': 40
             })
 
             if cursor is None:
