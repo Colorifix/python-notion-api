@@ -1,4 +1,4 @@
-from notion_integration.api.models.fields import (
+from python_notion_api.models.fields import (
     typeField,
     idField,
     objectField,
@@ -9,7 +9,7 @@ from notion_integration.api.models.fields import (
     orField
 )
 
-from notion_integration.api.models.common import (
+from python_notion_api.models.common import (
     TextObject,
     RichTextObject,
     File,
@@ -24,13 +24,13 @@ from notion_integration.api.models.common import (
     RelationObject
 )
 
-from notion_integration.api.models.values import (
+from python_notion_api.models.values import (
     FormulaPropertyValue,
     RollupPropertyValue,
     PropertyValue
 )
 
-from notion_integration.api.models.objects import (
+from python_notion_api.models.objects import (
     NotionObjectBase,
     NotionObject,
     User,
@@ -41,7 +41,7 @@ from notion_integration.api.models.objects import (
 )
 
 
-from notion_integration.api.models.properties import (
+from python_notion_api.models.properties import (
     PropertyItem,
     TitlePropertyItem,
     RichTextPropertyItem,
@@ -65,12 +65,12 @@ from notion_integration.api.models.properties import (
     RollupPropertyItem
 )
 
-from notion_integration.api.models.paginations import (
+from python_notion_api.models.paginations import (
     PagePagination,
     PropertyItemPagination
 )
 
-from notion_integration.api.models.configurations import (
+from python_notion_api.models.configurations import (
     NotionPropertyConfiguration,
     TitlePropertyConfiguration,
     TextPropertyConfiguration,
@@ -97,11 +97,11 @@ from notion_integration.api.models.configurations import (
     LastEditedByPropertyConfiguration
 )
 
-from notion_integration.api.models.iterators import (
+from python_notion_api.models.iterators import (
     PropertyItemIterator
 )
 
-from notion_integration.api.models.filters import (
+from python_notion_api.models.filters import (
     RichTextFilter,
     PhoneNumberFilter,
     NumberFilter,
@@ -121,9 +121,9 @@ from notion_integration.api.models.filters import (
     and_filter
 )
 
-from notion_integration.api.models.sorts import Sort
+from python_notion_api.models.sorts import Sort
 
-from notion_integration.api.models.blocks import ParagraphBlock
+from python_notion_api.models.blocks import ParagraphBlock
 
 __all__ = [
     "typeField",

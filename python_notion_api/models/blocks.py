@@ -2,8 +2,8 @@
 from __future__ import annotations
 from typing import List, Optional
 from pydantic import BaseModel, root_validator, ValidationError, AnyUrl
-from notion_integration.api.models.common import RichTextObject
-from notion_integration.api.models.objects import Block
+from python_notion_api.models.common import RichTextObject
+from python_notion_api.models.objects import Block
 
 
 class ParagraphBlockValue(BaseModel):

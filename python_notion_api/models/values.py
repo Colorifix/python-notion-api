@@ -4,12 +4,12 @@ from uuid import UUID
 
 from loguru import logger
 
-from notion_integration.api.models.common import (DateObject, File, FileObject,
+from python_notion_api.models.common import (DateObject, File, FileObject,
                                                   FormulaObject,
                                                   RelationObject,
                                                   RichTextObject, RollupObject, SelectObject,
                                                   StatusObject)
-from notion_integration.api.models.objects import User
+from python_notion_api.models.objects import User
 from pydantic import (BaseModel, Field, ValidationError, parse_obj_as,
                       root_validator, AnyUrl, FilePath)
 from typing_extensions import Annotated

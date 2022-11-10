@@ -2,18 +2,18 @@ import json
 from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
 
 from loguru import logger
-from notion_integration.api.models.common import (FileObject,
+from python_notion_api.models.common import (FileObject,
                                                   ParentObject)
-from notion_integration.api.models.configurations import (
+from python_notion_api.models.configurations import (
     NotionPropertyConfiguration, RelationPropertyConfiguration)
-from notion_integration.api.models.filters import FilterItem
-from notion_integration.api.models.iterators import PropertyItemIterator
-from notion_integration.api.models.objects import (Block, Database,
+from python_notion_api.models.filters import FilterItem
+from python_notion_api.models.iterators import PropertyItemIterator
+from python_notion_api.models.objects import (Block, Database,
                                                    NotionObjectBase,
                                                    Pagination, User)
-from notion_integration.api.models.properties import NotionObject, PropertyItem
-from notion_integration.api.models.sorts import Sort
-from notion_integration.api.models.values import PropertyValue, generate_value
+from python_notion_api.models.properties import NotionObject, PropertyItem
+from python_notion_api.models.sorts import Sort
+from python_notion_api.models.values import PropertyValue, generate_value
 from pydantic import BaseModel
 from requests import Session
 from requests.adapters import HTTPAdapter

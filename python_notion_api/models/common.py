@@ -2,8 +2,8 @@ from datetime import date, datetime
 import os
 from typing import Dict, List, Literal, Optional, Union
 
-from notion_integration.api.models.fields import idField, typeField
-from notion_integration.gdrive import GDrive
+from python_notion_api.models.fields import idField, typeField
+from python_notion_api.gdrive import GDrive
 from pydantic import (AnyUrl, BaseModel)
 
 

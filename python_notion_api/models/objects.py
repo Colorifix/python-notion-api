@@ -3,18 +3,18 @@ from typing import Literal, Optional, Dict, List, Union, ClassVar
 
 from datetime import datetime
 
-from notion_integration.api.models.fields import (
+from python_notion_api.models.fields import (
     idField, typeField, objectField
 )
 
-from notion_integration.api.models.common import (
+from python_notion_api.models.common import (
     RichTextObject,
     EmojiObject,
     FileObject,
     ParentObject
 )
 
-from notion_integration.api.utils import get_derived_class
+from python_notion_api.utils import get_derived_class
 
 
 class NotionObjectBase(BaseModel):

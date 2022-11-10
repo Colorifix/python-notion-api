@@ -1,7 +1,7 @@
 from typing import Dict, List
 
-from notion_integration.api.models.objects import Pagination, Page, Block
-from notion_integration.api.models.properties import PropertyItem
+from python_notion_api.models.objects import Pagination, Page, Block
+from python_notion_api.models.properties import PropertyItem
 
 
 class PagePagination(Pagination):

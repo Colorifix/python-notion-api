@@ -3,13 +3,13 @@ from loguru import logger
 import unittest
 import os
 
-from notion_integration.api import NotionAPI, File
-from notion_integration.api.models.filters import (
+from python_notion_api import NotionAPI, File
+from python_notion_api.models.filters import (
     and_filter, or_filter,
     SelectFilter, MultiSelectFilter
 )
 
-from notion_integration.api.models.sorts import Sort
+from python_notion_api.models.sorts import Sort
 
 from datetime import datetime
 
@@ -250,3 +250,7 @@ class TestDatabase(_TestBase):
         )
         page = next(pages)
         self.assertIsNotNone(page)
+
+
+if __name__ == '__main__':
+    unittest.main()

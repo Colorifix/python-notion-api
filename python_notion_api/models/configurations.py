@@ -1,12 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional
 
-from notion_integration.api.models.fields import (
+from python_notion_api.models.fields import (
     idField, typeField
 )
 
-from notion_integration.api.models.objects import NotionObjectBase
-from notion_integration.api.models.common import SelectObject
+from python_notion_api.models.objects import NotionObjectBase
+from python_notion_api.models.common import SelectObject
 
 EmptyField = Optional[Dict]
 

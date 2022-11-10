@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, root_validator
 
-from notion_integration.api.models.fields import propertyField
+from python_notion_api.models.fields import propertyField
 
 
 class Sort(BaseModel):
