@@ -3,7 +3,7 @@
 ## Quick start
 
 ```python
-from api import NotionAPI
+from python_notion_api import NotionAPI
 
 api = NotionAPI(
     access_token='secret_token'
@@ -15,7 +15,7 @@ api = NotionAPI(
 ### Retrieve a database
 
 ```python
-from api import NotionAPI
+from python_notion_api import NotionAPI
 
 api = NotionAPI(
     access_token='secret_token'
@@ -29,7 +29,7 @@ Returns a `NotionDatabase` object.
 ### Query
 
 ```python
-from api import NotionAPI
+from python_notion_api import NotionAPI
 
 api = NotionAPI(
     access_token='secret_token'
@@ -45,10 +45,10 @@ Allows you to iterate over all pages in the database.
 
 ### Filters
 
-You can use filter classes in `api.models.filters` to create property filters and pass them to the query.
+You can use filter classes in `python_notion_api.models.filters` to create property filters and pass them to the query.
 
 ```python
-from api.models.filters import SelectFilter
+from python_notion_api.models.filters import SelectFilter
 
 res = database.query(
     filters=SelectFilter(property="Property Name", equals="xxx")
@@ -58,8 +58,8 @@ res = database.query(
 Timestamp, 'and' and 'or' filters are supported:
 
 ```python
-from api.models.filters import SelectFilter, NumberFilter, CheckboxFilter
-from api.models.filters import and_filter, or_filter
+from python_notion_api.models.filters import SelectFilter, NumberFilter, CheckboxFilter
+from python_notion_api.models.filters import and_filter, or_filter
 
 res = database.query(
     filters=or_filter([
@@ -76,10 +76,10 @@ You can read more on filters [here](https://developers.notion.com/reference/post
 
 ### Sorts
 
-You can use `api.models.sorts.Sort` class to create sorts and pass them to the query.
+You can use `python_notion_api.models.sorts.Sort` class to create sorts and pass them to the query.
 
 ```python
-from api.models.sorts import Sort
+from python_notion_api.models.sorts import Sort
 
 res = database.query(
     sorts=[
@@ -102,7 +102,7 @@ Will return a `NotionPage` object.
 ### Create a page
 
 ```python
-from api import NotionAPI
+from python_notion_api import NotionAPI
 
 api = NotionAPI(
     access_token='secret_token'
@@ -117,7 +117,7 @@ database.create_page(
 )
 ```
 
-The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `notion_integration.api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
+The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `python_notion_api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
 E.g.
 
 ```python
@@ -166,9 +166,9 @@ In particular, the values of rollups and formulas may be incorrect when retrieve
 To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyValue`) and define the mapping from Notion property names to the function names. 
 
 ```python
-from notion_integration.api.api import NotionPage
-from notion_integration.api.models import RichTextObject
-from notion_integration.api.models.values import RichTextPropertyValue
+from python_notion_api.api import NotionPage
+from python_notion_api.models import RichTextObject
+from python_notion_api.models.values import RichTextPropertyValue
 
 class MyPage(NotionPage):
     # Use this dictionary to map the property names to functions

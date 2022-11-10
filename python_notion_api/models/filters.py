@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Extra, root_validator
 
-from notion_integration.api.models.fields import (andField, orField,
+from python_notion_api.models.fields import (andField, orField,
                                                   propertyField)
 
 

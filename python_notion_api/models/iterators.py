@@ -1,6 +1,6 @@
-from notion_integration.api.models.common import DateObject
+from python_notion_api.models.common import DateObject
 
-from notion_integration.api.models.properties import PropertyItem
+from python_notion_api.models.properties import PropertyItem
 
 
 class PropertyItemIterator:
