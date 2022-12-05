@@ -1,5 +1,14 @@
 # A Python implementation of the Notion API
 
+Object oriented API wrapper that uses Pydantic to convert Notion objects to Python objects and viceversa.
+
+Current alternatives are:
+
+- Client library for the official API, at the moment it doesn't resolve the objects to classes:
+https://github.com/ramnes/notion-sdk-py
+- Unofficial Python 3 client for Notion.so API v3, it doesn't use the official Notion API.
+https://github.com/jamalex/notion-py
+
 ## Quick start
 
 ```python
@@ -117,7 +126,7 @@ database.create_page(
 )
 ```
 
-The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datatime), with a class from `python_notion_api.models` for storing that value (e.g. `DatePropertyValue`,  `SelectValue`, `User`, `RichTextObject`), or with a `PropertyItem` or `PropertyItemIterator` class.  
+The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datetime) or with a class from `python_notion_api.models.common` for storing the object (e.g. `DateObject`,  `SelectObject`, `RichTextObject`, `TextObject`).
 E.g.
 
 ```python
@@ -125,8 +134,9 @@ database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
 database.create_page(properties={
     'Value': 234, 
-    'Select_property': SelectValue(name='select1'),
-    'Checkbox_property': CheckBoxPropertyItem(checkbox=True)
+    'Select_property': 'select1',
+    'Checkbox_property': True,
+    'Relation_property': ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx']
 })
 ```
 
@@ -144,15 +154,14 @@ page.set('Property name', 'new value')
 
 ### Retrieve a page property item
 
-
 When getting a property through `page.get` or `page.properties` the return type will
-be either `PropertyItem` or `PropertyItemIterator` (for properties that can have multple values, i.e. relations, title, rich_text and people)
+be either `PropertyValue` or `PropertyItemIterator` (for properties that can have multple values, i.e. relations, title, rich_text and people)
 
-Each property type is wrapped into it's own class defined in `api.models.properties`. To get a human-readable 'simple' value that represents the propery, you can use `PropertyItem.value` attribute. To get a list of all property items values from `PropertyItemIterator` you can use
+Each property type is wrapped into it's own class defined in `api.models.properties`. To get a human-readable 'simple' value that represents the propery, you can use `PropertyValue.value` attribute. To get a list of all property items values from `PropertyItemIterator` you can use
 `PropertyItemIterator.value`. For rich_text and title property types `value` will return a concatenaded string.
 
 ```python
-page.get('Prroperty name').value
+page.get('Property name').value
 page.get('Relation property').value
 
 for value in page.get('Relation property'):
@@ -267,3 +276,32 @@ These can only reference values 1 level deep. For any deeper reference, for exam
 There is no error or warning when this occurs, so be careful!  
 
 A subclass of NotionPage can be used to fully recreate rollups and formulas (see above).  
+
+## File upload
+The official Notion API doesn't yet support uploading files. As an alternative, it is possible to upload files to GDrive and use the 
+link in a column of type File.
+
+To configure it, set the env variable `GDRIVE_CONF` to the location of a json configuration file with the following structure:
+
+```json
+'GDRIVE': {
+    'CLIENT_CONFIG_FILE': 'path_to_oauth_config_file'
+    'CREDENTIALS': 'path_to_oauth_credentials_file',
+    'SHARED_DRIVE': 'id_of_shared_drive_to_use',
+}
+```
+
+Example:
+
+```python
+from python_notion_api import NotionAPI
+from python_notion_api.models.common import File
+
+api = NotionAPI(access_token='secret_token')
+page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+page.set('File Property', [File.from_file_path(file_path=file_path)])
+```
+
+## Requirements
+
+This library requires `Python >= 3.7`. For full list of requirements, see the `pyproject.toml` file.

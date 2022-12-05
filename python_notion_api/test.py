@@ -17,7 +17,7 @@ from datetime import datetime
 class _TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.api = NotionAPI(access_token=os.environ.get("NOTION_SECRET"))
+        cls.api = NotionAPI(access_token=os.environ.get("NOTION_TOKEN"))
         cls.TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
 
         cls.TEST_TITLE = f"API Test {datetime.utcnow().isoformat()}"
@@ -78,28 +78,39 @@ class TestPage(_TestBase):
 
     def test_set_title(self):
         self.new_page.set("Name", self.TEST_TITLE)
-        self.assertEqual(self.new_page.get("Name").value, self.TEST_TITLE)
+        self.assertEqual(
+            self.new_page.get("Name", cache=False).value, self.TEST_TITLE
+        )
 
     def test_set_text(self):
         self.new_page.set("Text", self.TEST_TEXT)
-        self.assertEqual(self.new_page.get("Text").value, self.TEST_TEXT)
+        self.assertEqual(
+            self.new_page.get("Text", cache=False).value, self.TEST_TEXT
+        )
 
     def test_set_number(self):
         self.new_page.set("Number", self.TEST_NUMBER)
-        self.assertEqual(self.new_page.get("Number").value, self.TEST_NUMBER)
+        self.assertEqual(
+            self.new_page.get("Number", cache=False).value,
+            self.TEST_NUMBER
+        )
 
     def test_set_select(self):
         self.new_page.set("Select", self.TEST_SELECT)
-        self.assertEqual(self.new_page.get("Select").value, self.TEST_SELECT)
+        self.assertEqual(
+            self.new_page.get("Select", cache=False).value, self.TEST_SELECT
+        )
 
     def test_set_status(self):
         self.new_page.set("Status", self.TEST_STATUS)
-        self.assertEqual(self.new_page.get("Status").value, self.TEST_STATUS)
+        self.assertEqual(
+            self.new_page.get("Status", cache=False).value, self.TEST_STATUS
+        )
 
     def test_set_multi_select(self):
         self.new_page.set("Multi-select", self.TEST_MULTI_SELECT)
         self.assertEqual(
-            self.new_page.get("Multi-select").value,
+            self.new_page.get("Multi-select", cache=False).value,
             self.TEST_MULTI_SELECT
         )
 
@@ -107,7 +118,7 @@ class TestPage(_TestBase):
         self.new_page.set("Date", self.TEST_DATE)
         self.assertTrue(
             abs(
-                self.new_page.get("Date").value.start.timestamp()
+                self.new_page.get("Date", cache=False).value.start.timestamp()
                 - self.TEST_DATE.timestamp()
             ) < 60000
         )
@@ -115,40 +126,51 @@ class TestPage(_TestBase):
     def test_set_person(self):
         self.new_page.set("Person", self.TEST_PEOPLE)
         self.assertEqual(
-            self.new_page.get("Person").value,
+            self.new_page.get("Person", cache=False).value,
             ["Mihails Delmans"]
         )
 
     def test_set_files(self):
         self.new_page.set("Files & media", self.TEST_FILES)
         self.assertEqual(
-            self.new_page.get("Files & media").value[0].url,
+            self.new_page.get("Files & media", cache=False).value[0].url,
             self.TEST_FILES[0].url
         )
 
     def test_set_checkbox(self):
         self.new_page.set("Checkbox", self.TEST_CHECKBOX)
         self.assertEqual(
-            self.new_page.get("Checkbox").value,
+            self.new_page.get("Checkbox", cache=False).value,
             self.TEST_CHECKBOX
         )
 
     def test_set_url(self):
         self.new_page.set("URL", self.TEST_URL)
-        self.assertEqual(self.new_page.get("URL").value, self.TEST_URL)
+        self.assertEqual(
+            self.new_page.get("URL", cache=False).value,
+            self.TEST_URL
+        )
 
     def test_set_email(self):
         self.new_page.set("Email", self.TEST_EMAIL)
-        self.assertEqual(self.new_page.get("Email").value, self.TEST_EMAIL)
+        self.assertEqual(
+            self.new_page.get("Email", cache=False).value,
+            self.TEST_EMAIL
+        )
 
     def test_set_phone(self):
         self.new_page.set("Phone", self.TEST_PHONE)
-        self.assertEqual(self.new_page.get("Phone").value, self.TEST_PHONE)
+        self.assertEqual(
+            self.new_page.get("Phone", cache=False).value,
+            self.TEST_PHONE
+        )
 
     def test_set_relation(self):
         self.new_page.set("Relation", [self.new_page.page_id])
         self.assertEqual(
-            self.new_page.get("Relation").value[0].replace('-', ''),
+            self.new_page.get(
+                "Relation", cache=False
+            ).value[0].replace('-', ''),
             self.new_page.page_id
         )
 

@@ -45,8 +45,7 @@ class GDrive():
         elif len(item) == 1:
             return item[0]
         else:
-            raise(f"There all multiples matches for: {name}")
-
+            raise f"There all multiples matches for: {name}"
 
     def upload_file(self, file_path, file_name=None, parent_id=None):
         file_name = file_name or os.path.basename(file_path)

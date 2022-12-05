@@ -25,7 +25,6 @@ from python_notion_api.models.values import (
 )
 
 from python_notion_api.models.objects import (
-    User,
     NotionObject
 )
 

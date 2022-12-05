@@ -4,11 +4,10 @@ from uuid import UUID
 
 from loguru import logger
 
-from python_notion_api.models.common import (DateObject, File, FileObject,
-                                                  FormulaObject,
-                                                  RelationObject,
-                                                  RichTextObject, RollupObject, SelectObject,
-                                                  StatusObject)
+from python_notion_api.models.common import (
+    DateObject, File, FileObject, FormulaObject, RelationObject,
+    RichTextObject, RollupObject, SelectObject, StatusObject
+)
 from python_notion_api.models.objects import User
 from pydantic import (BaseModel, Field, ValidationError, parse_obj_as,
                       root_validator, AnyUrl, FilePath)
@@ -62,7 +61,7 @@ class TitlePropertyValue(PropertyValue):
     _type_map = {
         str: 'validate_str',
         List[RichTextObject]: 'leave_unchanged',
-        RichTextObject: 'validate_rich_test'
+        RichTextObject: 'validate_rich_text'
     }
     _set_field = 'title'
 
@@ -89,7 +88,7 @@ class RichTextPropertyValue(PropertyValue):
     _type_map = {
         str: 'validate_str',
         List[RichTextObject]: 'leave_unchanged',
-        RichTextObject: 'validate_rich_test'
+        RichTextObject: 'validate_rich_text'
     }
     _set_field = 'rich_text'
 
@@ -369,11 +368,14 @@ class RelationPropertyValue(PropertyValue):
     _type_map = {
         List[RelationObject]: "leave_unchanged",
         List[str]: "validate_list",
-        str: "validate_str"
+        str: "validate_str",
+        RelationObject: "validate_relation"
     }
     _set_field = 'relation'
 
-    init: excluded(Optional[Union[List[RelationObject], List[str], str]])
+    init: excluded(Optional[
+        Union[List[RelationObject], List[str], RelationObject, str]
+    ])
     relation: List[RelationObject]
 
     @classmethod
@@ -387,6 +389,10 @@ class RelationPropertyValue(PropertyValue):
     @property
     def value(self):
         return [element.relation_id for element in self.relation]
+
+    @classmethod
+    def validate_relation(cls, init: RelationObject):
+        return [init]
 
 
 class FormulaPropertyValue(PropertyValue):
