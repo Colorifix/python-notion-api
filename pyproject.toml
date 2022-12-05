@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Python wrapper for the official Notion API"
 authors = [
     "Mihails <mihails.delmans@colorifix.com>",
-	"Paula Fernandez <paula@friends.colorifix.com>"
+	"Paula Fernandez <paula@friends.colorifix.com>",
+    "Michael Hall <michael.hall@colorifix.com>"
 ]
 
 [tool.poetry.dependencies]
@@ -17,6 +18,9 @@ pydrive = "^1.3.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+
+[tool.poetry.group.dev.dependencies]
+pycodestyle = "^2.10.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
