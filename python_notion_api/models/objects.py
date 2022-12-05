@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, Extra
-from typing import Literal, Optional, Dict, List, Union, ClassVar
+from pydantic import BaseModel, Field, Extra, root_validator, ValidationError
+from typing import Literal, Optional, Dict, List, Union, ClassVar, Type
 
 from datetime import datetime
 
@@ -156,13 +156,48 @@ class Page(NotionObject):
 
 class Block(NotionObject):
     block_type: Literal[
-        "paragraph", "embed"
+        "paragraph", "heading_1", "heading_2", "heading_3", "callout",
+        "quote", "bulleted_list_item", "numbered_list_item", "to_do", "toggle",
+        "code", "child_page", "child_database", "embed", "image", "video",
+        "file", "pdf", "bookmark", "equation", "divider", "table_of_contents",
+        "breadcrumb", "column_list", "column", "link_preview", "template",
+        "link_to_page", "synced_block", "table", "table_row"
     ] = typeField
 
     _class_map = {
         "paragraph": "ParagraphBlock",
-        "embed": "EmbedBlock"
+        "heading_1": "Heading1Block",
+        "heading_2": "Heading2Block",
+        "heading_3": "Heading3Block",
+        "callout": "CalloutBlock",
+        "quote": "QuoteBlock",
+        "bulleted_list_item": "BulletedListItemBlock",
+        "numbered_list_item": "NumberedListItemBlock",
+        "to_do": "ToDoBlock",
+        "toggle": "ToggleBlock",
+        "code": "CodeBlock",
+        "child_page": "ChildPageBlock",
+        "child_database": "ChildDatabaseBlock",
+        "embed": "EmbedBlock",
+        "image": "ImageBlock",
+        "video": "VideoBlock",
+        "file": "FileBlock",
+        "pdf": "PDFBlock",
+        "bookmark": "BookmarkBlock",
+        "equation": "EquationBlock",
+        "divider": "DividerBlock",
+        "table_of_contents": "TableOfContentsBlock",
+        "breadcrumb": "BreadcrumbBlock",
+        "column_list": "ColumnListBlock",
+        "column": "ColumnBlock",
+        "link_preview": "LinkPreviewBlock",
+        "template": "TemplateBlock",
+        "link_to_page": "LinkToPageBlock",
+        "synced_block": "SyncedBlock",
+        "table": "TableBlock",
+        "table_row": "TableRowBlock"
     }
+    _block_map = {v: k for k, v in _class_map.items()}
 
     id: Optional[str] = idField
     parent: Optional[ParentObject]
@@ -176,3 +211,30 @@ class Block(NotionObject):
     @property
     def _class_key_field(self):
         return self.block_type
+
+    @root_validator(pre=True)
+    def validate_block(cls, values):
+        try:
+            block_type = cls._block_map.get(cls.__name__, None)
+            if block_type is None:
+                # It is a Block, not a subclass
+                return values
+            else:
+                try:
+                    value_type = cls.__fields__[block_type].type_
+                except KeyError as e:
+                    # One of the blocks with no stored information
+                    return {
+                        "object": "block",
+                        "type": block_type
+                    }
+
+                obj = value_type(**values)
+                return {
+                    block_type: obj,
+                    "object": "block",
+                    "type": block_type
+                }
+        except ValidationError:
+            pass
+        return values

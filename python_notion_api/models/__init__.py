@@ -123,7 +123,38 @@ from python_notion_api.models.filters import (
 
 from python_notion_api.models.sorts import Sort
 
-from python_notion_api.models.blocks import ParagraphBlock
+from python_notion_api.models.blocks import (
+    ParagraphBlock,
+    Heading1Block,
+    Heading2Block,
+    Heading3Block,
+    CalloutBlock,
+    QuoteBlock,
+    BulletedListItemBlock,
+    NumberedListItemBlock,
+    ToDoBlock,
+    CodeBlock,
+    ChildPageBlock,
+    ChildDatabaseBlock,
+    EmbedBlock,
+    ImageBlock,
+    VideoBlock,
+    FileBlock,
+    PDFBlock,
+    BookmarkBlock,
+    EquationBlock,
+    DividerBlock,
+    TableOfContentsBlock,
+    BreadcrumbBlock,
+    ColumnListBlock,
+    ColumnBlock,
+    LinkPreviewBlock,
+    TemplateBlock,
+    LinkToPageBlock,
+    SyncedBlock,
+    TableBlock,
+    TableRowBlock
+)
 
 __all__ = [
     "typeField",
@@ -232,5 +263,34 @@ __all__ = [
 
     "Sort",
 
-    "ParagraphBlock"
+    "ParagraphBlock",
+    "Heading1Block",
+    "Heading2Block",
+    "Heading3Block",
+    "CalloutBlock",
+    "QuoteBlock",
+    "BulletedListItemBlock",
+    "NumberedListItemBlock",
+    "ToDoBlock",
+    "CodeBlock",
+    "ChildPageBlock",
+    "ChildDatabaseBlock",
+    "EmbedBlock",
+    "ImageBlock",
+    "VideoBlock",
+    "FileBlock",
+    "PDFBlock",
+    "BookmarkBlock",
+    "EquationBlock",
+    "DividerBlock",
+    "TableOfContentsBlock",
+    "BreadcrumbBlock",
+    "ColumnListBlock",
+    "ColumnBlock",
+    "LinkPreviewBlock",
+    "TemplateBlock",
+    "LinkToPageBlock",
+    "SyncedBlock",
+    "TableBlock",
+    "TableRowBlock"
 ]

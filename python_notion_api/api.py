@@ -7,7 +7,8 @@ from python_notion_api.models.common import (FileObject,
 from python_notion_api.models.configurations import (
     NotionPropertyConfiguration, RelationPropertyConfiguration)
 from python_notion_api.models.filters import FilterItem
-from python_notion_api.models.iterators import PropertyItemIterator
+from python_notion_api.models.iterators import (
+    PropertyItemIterator, BlockIterator)
 from python_notion_api.models.objects import (Block, Database,
                                                    NotionObjectBase,
                                                    Pagination, User)
@@ -55,22 +56,35 @@ class NotionPage:
     def page_id(self) -> str:
         return self._page_id.replace("-", "")
 
-    def add_blocks(self, content: List[Block]):
+    def add_blocks(self, blocks: List[Block]) -> BlockIterator:
         """Wrapper for add new blocks to an existing page.
 
         Args:
-            text: Content of the new block.
+            blocks: List of Blocks to add
         """
         data = {
             "children": [
                 block.dict(by_alias=True, exclude_unset=True)
-                for block in content
+                for block in blocks
             ]
         }
-        return self._api._patch(
+        new_blocks = self._api._patch(
             endpoint=f'blocks/{self.page_id}/children',
             data=json.dumps(data)
         )
+        return BlockIterator(iter(new_blocks.results))
+
+    def get_blocks(self) -> BlockIterator:
+        """
+        Get an iterater of all blocks in the page
+        Returns:
+
+        """
+
+        generator = self._api._get_iterate(
+            endpoint=f'blocks/{self._page_id}/children'
+        )
+        return BlockIterator(generator)
 
     def get(self, prop_name: str, cache: bool = True) -> PropertyValue:
         """
@@ -212,6 +226,67 @@ class NotionPage:
                 if not rels_only:
                     vals[prop_name] = prop.value
         return vals
+
+
+class NotionBlock:
+    """wrapper for notion block object
+
+    Args:
+        api: Instance of the NotionAPI.
+        block_id: Id of the block.
+    """
+    def __init__(self, api, block_id):
+        self._api = api
+        self._block_id = block_id
+
+    @property
+    def block_id(self) -> str:
+        return self._block_id.replace("-", "")
+
+    def get_child_blocks(self) -> BlockIterator:
+        """
+        Get an iterater of all blocks in the block
+        Returns:
+
+        """
+        generator = self._api._get_iterate(
+            endpoint=f'blocks/{self._block_id}/children'
+        )
+        return BlockIterator(generator)
+
+    def add_child_block(self, content: List[Block]) -> BlockIterator:
+        """Wrapper for add new blocks to an existing page.
+
+        Args:
+            content: Content of the new block.
+        """
+        data = {
+            "children": [
+                block.dict(by_alias=True, exclude_unset=True)
+                for block in content
+            ]
+        }
+        new_blocks = self._api._patch(
+            endpoint=f'blocks/{self.block_id}/children',
+            data=json.dumps(data)
+        )
+        return BlockIterator(iter(new_blocks.results))
+
+    def set(self, block: Block) -> Block:
+        """
+        Updates the content of a Block. The entire content is replaced.
+        Args:
+            block: Block with the new values.
+
+        Returns:
+
+        """
+        data = block.dict(by_alias=True, exclude_unset=True)
+        new_block = self._api._patch(
+            endpoint=f'blocks/{self.block_id}',
+            data=json.dumps(data)
+        )
+        return new_block
 
 
 class NotionDatabase:
@@ -587,8 +662,15 @@ class NotionAPI:
                 params=params
             )
 
+            if hasattr(response, 'property_item'):
+                # Required for rollups
+                property_item = response.property_item
+            else:
+                # property doesn't exist for Blocks
+                property_item = None
+
             for item in response.results:
-                yield item, response.property_item
+                yield item, property_item
 
             has_more = response.has_more
             cursor = response.next_cursor
@@ -610,6 +692,14 @@ class NotionAPI:
             property retrieval
         """
         return page_cast(self, page_id)
+
+    def get_block(self, block_id) -> NotionBlock:
+        """ Wrapper for 'Retrieve a block' action.
+
+        Args:
+            block_id: Id of the block to fetch.
+        """
+        return NotionBlock(self, block_id)
 
     def me(self) -> User:
         return self._get("users/me")
