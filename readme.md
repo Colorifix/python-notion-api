@@ -159,6 +159,16 @@ for value in page.get('Relation property'):
     print(value)
 ```
 
+### Retrieve page blocks
+
+Each block type has its own class in `models.blocks`.
+
+```python
+blocks = page.get_blocks()
+for block in blocks:
+    print(block.block_type)
+```
+
 ### Custom page properties
 In some cases, we may not want the values directly returned by the API. 
 In particular, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
@@ -213,7 +223,44 @@ for page in database.query(cast_cls=MyPage, filters=NumberFilter(property='Value
        
 ```
 
+## Blocks
 
+### Retrieve a block
+
+```python
+block = api.get_block(block_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+```
+
+### Get and add block children
+
+```python
+p = ParagraphBlock(
+    rich_text=[RichTextObject.from_str("Some text to add through API")]
+)
+block.add_child_block(content=[p])
+
+
+child_blocks = block.get_child_blocks()
+```
+
+### Update a block
+
+All values must be updated at once. 
+
+```python
+from python_notion_api.models.blocks import ParagraphBlock, ParagraphBlockValue, RichTextObject
+
+# Make new block with updated values
+new_block = ParagraphBlock.from_obj({'object': 'block',
+ 'type': 'paragraph',
+ 'paragraph': {'rich_text': [
+     {'plain_text': 'Text here not used for some reason', 'type': 'text', 
+     'text': {'content': 'This is the text that will be added', 'link': None}}]}  
+})
+
+block = api.get_block(block_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+block.set(new_block)
+```
 
 ## Problems with rollups and formulas
 These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect. 
