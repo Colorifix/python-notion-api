@@ -1,17 +1,23 @@
 import json
 from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
-
 from loguru import logger
-from python_notion_api.models.common import (FileObject,
-                                                  ParentObject)
+
+from python_notion_api.models.common import (
+    FileObject,
+    ParentObject
+)
 from python_notion_api.models.configurations import (
     NotionPropertyConfiguration, RelationPropertyConfiguration)
 from python_notion_api.models.filters import FilterItem
 from python_notion_api.models.iterators import (
-    PropertyItemIterator, BlockIterator)
-from python_notion_api.models.objects import (Block, Database,
-                                                   NotionObjectBase,
-                                                   Pagination, User)
+    PropertyItemIterator, create_property_iterator, BlockIterator
+)
+from python_notion_api.models.objects import (
+    Block, Database, NotionObjectBase, Pagination, User
+)
+from python_notion_api.models.objects import (
+    Block, Database, NotionObjectBase, Pagination, User
+)
 from python_notion_api.models.properties import NotionObject, PropertyItem
 from python_notion_api.models.sorts import Sort
 from python_notion_api.models.values import PropertyValue, generate_value
@@ -32,8 +38,9 @@ class NotionPage:
     class PatchRequest(BaseModel):
         properties: Dict[str, PropertyValue]
 
-    special_properties = {}  # Map from property names to function names.
-                             # For use in subclasses
+    # Map from property names to function names.
+    # For use in subclasses
+    special_properties = {}
 
     def __init__(self, api, page_id, database=None):
         self._api = api
@@ -86,7 +93,9 @@ class NotionPage:
         )
         return BlockIterator(generator)
 
-    def get(self, prop_name: str, cache: bool = True) -> PropertyValue:
+    def get(
+        self, prop_name: str, cache: bool = True
+    ) -> Union[PropertyValue, PropertyItemIterator]:
         """
         First checks if the property is 'special', if so, will call the special
         function to get that property value.
@@ -107,7 +116,9 @@ class NotionPage:
         else:
             return self._direct_get(prop_name=prop_name, cache=cache)
 
-    def _direct_get(self, prop_name: str, cache: bool = True) -> PropertyValue:
+    def _direct_get(
+        self, prop_name: str, cache: bool = True
+    ) -> Union[PropertyValue, PropertyItemIterator]:
         """Wrapper for 'Retrieve a page property item' action.
 
         Will return whatever is retrieved from the API, no special cases.
@@ -124,15 +135,10 @@ class NotionPage:
             prop_id = obj.property_id
             prop_type = obj.property_type
 
-            # We need to always query the API for formulas as otherwise we
-            # might not get the whole value.
-            if prop_type == 'formula':
+            # We need to always query the API for formulas and rollups as
+            # otherwise we might get incorrect values.
+            if prop_type in ('formula', 'rollup'):
                 cache = False
-            # Though rollups have the same problem as formulas, they
-            # are not fully supported yet and disabling cache is not
-            # allowed.
-            if prop_type == 'rollup':
-                cache = True
 
             if (cache and not obj.has_more):
                 return PropertyValue.from_property_item(obj)
@@ -146,12 +152,7 @@ class NotionPage:
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
-                ret = obj.__class__(
-                    property_id=prop_id,
-                    property_type=prop_type,
-                    init=[getattr(item, prop_type) for item, _ in generator]
-                )
-                return PropertyValue.from_property_item(ret)
+                return create_property_iterator(generator, prop_type, prop_id)
 
             elif isinstance(ret, PropertyItem):
                 return PropertyValue.from_property_item(ret)

@@ -1,6 +1,7 @@
 from python_notion_api.models.common import DateObject
 
 from python_notion_api.models.properties import PropertyItem
+from python_notion_api.utils import get_derived_class
 from python_notion_api.models.blocks import Block
 
 
@@ -10,7 +11,6 @@ class PropertyItemIterator:
         self.property_type = property_type
         self.property_id = property_id
         self._value = None
-        self.cache = None
 
     def __iter__(self):
         return self
@@ -25,22 +25,16 @@ class PropertyItemIterator:
         return self._value
 
     def _get_value(self):
-        return [
-            PropertyItem.from_obj(item.dict()).value
-            for item, _ in self.generator
-        ]
-
-
-class TextPropertyItemIterator(PropertyItemIterator):
-    def _get_value(self):
-        return "".join([
-            PropertyItem.from_obj(item.dict()).value
-            for item, _ in self.generator
-        ])
-
-
-class ArrayPropertyItemIterator(PropertyItemIterator):
-    pass
+        prop_cls = get_derived_class(
+            PropertyItem,
+            PropertyItem._class_map.get(self.property_type)
+        )
+        return prop_cls(
+            id=self.property_id,
+            init=[
+                getattr(item, self.property_type) for item, _ in self.generator
+            ]
+        ).value
 
 
 class RollupPropertyItemIterator(PropertyItemIterator):
@@ -63,28 +57,35 @@ class RollupPropertyItemIterator(PropertyItemIterator):
             raise ValueError("Got an unsupported rollup. Sorry")
         elif prop_type == "array":
             return [
-                PropertyItem.from_obj(item.dict()).value
+                get_derived_class(
+                    PropertyItem,
+                    PropertyItem._class_map.get(item.property_type)
+                )(
+                    id=self.property_id,
+                    init=getattr(item, item.property_type)
+                ).value
                 for item in items
             ]
         elif prop_type == "number":
             return last_prop["rollup"]["number"]
         elif prop_type == "date":
-            return DateObject(**last_prop["rollup"]["date"])
+            date = last_prop["rollup"]["date"]
+            if date is not None:
+                return DateObject(**date)
+            else:
+                return None
+
         else:
             raise ValueError("Got an unknown rollup type: '{prop_type}'")
 
 
 def create_property_iterator(generator, property_type, property_id):
-    text_property_types = ["title", "rich_text"]
-
     if property_type == "rollup":
         return RollupPropertyItemIterator(
             generator, property_type, property_id
         )
-    elif property_type in text_property_types:
-        return TextPropertyItemIterator(generator, property_type, property_id)
     else:
-        return ArrayPropertyItemIterator(generator, property_type, property_id)
+        return PropertyItemIterator(generator, property_type, property_id)
 
 
 class BlockIterator:
