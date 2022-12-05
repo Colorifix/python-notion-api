@@ -1,6 +1,7 @@
 from python_notion_api.models.common import DateObject
 
 from python_notion_api.models.properties import PropertyItem
+from python_notion_api.models.blocks import Block
 
 
 class PropertyItemIterator:
@@ -84,3 +85,17 @@ def create_property_iterator(generator, property_type, property_id):
         return TextPropertyItemIterator(generator, property_type, property_id)
     else:
         return ArrayPropertyItemIterator(generator, property_type, property_id)
+
+
+class BlockIterator:
+    def __init__(self, generator):
+        self.generator = generator
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        next_block = next(self.generator)
+        if isinstance(next_block, tuple):
+            next_block = next_block[0]
+        return Block.from_obj(next_block.dict(by_alias=True))
