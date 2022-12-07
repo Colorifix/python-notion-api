@@ -428,7 +428,7 @@ class NotionDatabase:
         for prop_name, prop_value in properties.items():
             prop = self.properties.get(prop_name, None)
             if prop is None:
-                raise ValueError("Unknown property: '{prop_name}'")
+                raise ValueError("Unknown property: {prop_name}")
             value = generate_value(prop.config_type, prop_value)
             validated_properties[prop_name] = value
 
