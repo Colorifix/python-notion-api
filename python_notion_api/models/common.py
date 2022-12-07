@@ -9,7 +9,7 @@ from pydantic import (AnyUrl, BaseModel)
 
 class LinkObject(BaseModel):
     link_type: Optional[Literal['url']] = typeField
-    url: AnyUrl
+    url: str
 
 
 class TextObject(BaseModel):
