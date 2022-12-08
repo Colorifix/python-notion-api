@@ -157,7 +157,7 @@ class NotionPage:
             elif isinstance(ret, PropertyItem):
                 return PropertyValue.from_property_item(ret)
         else:
-            raise TypeError("Returned property is of an unknown type")
+            raise ValueError(f"Invalid property  name {prop_name}")
 
     def set(self, prop_name: str, value: Any) -> None:
         """Wrapper for 'Update page' action.
