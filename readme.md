@@ -152,6 +152,20 @@ page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 page.set('Property name', 'new value')
 ```
 
+### Archive page
+
+Pages can be archived as follows:
+```
+page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+
+page.alive = False
+```
+
+Archived pages can be restored for as long as they are in the bin.
+```
+page.alive = True
+```
+
 ### Retrieve a page property item
 
 When getting a property through `page.get` or `page.properties` the return type will
