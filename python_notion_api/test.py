@@ -174,6 +174,16 @@ class TestPage(_TestBase):
             self.new_page.page_id
         )
 
+    def test_set_alive(self):
+        self.new_page.alive = False
+        self.assertEqual(
+            self.new_page.alive, False
+        )
+        self.new_page.alive = True
+        self.assertEqual(
+            self.new_page.alive, True
+        )
+
     def test_create_new_page(self):
         new_page = self.db.create_page(
             properties={

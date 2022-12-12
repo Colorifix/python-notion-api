@@ -49,6 +49,8 @@ class NotionPage:
         self.database = database
 
         self._object = self._api._get(endpoint=f'pages/{self._page_id}')
+        self._alive = None
+
         if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
 
@@ -62,6 +64,18 @@ class NotionPage:
     @property
     def page_id(self) -> str:
         return self._page_id.replace("-", "")
+
+    @property
+    def alive(self):
+        if self._alive is None:
+            self._alive = not self._object.archived
+        return self._alive
+
+    @alive.setter
+    def alive(self, val: bool):
+        archive_status = not val
+        self._archive(archive_status)
+        self._alive = val
 
     def add_blocks(self, blocks: List[Block]) -> BlockIterator:
         """Wrapper for add new blocks to an existing page.
@@ -158,6 +172,15 @@ class NotionPage:
                 return PropertyValue.from_property_item(ret)
         else:
             raise ValueError(f"Invalid property  name {prop_name}")
+
+    def _archive(self, archive_status=True) -> None:
+        """Wrapper for 'Archive page' action if archive_status is True,
+        or 'Restore page' action if archive_status is False.
+        """
+        self._api._patch(
+            endpoint=f'pages/{self._page_id}',
+            data=json.dumps({"archived": archive_status})
+        )
 
     def set(self, prop_name: str, value: Any) -> None:
         """Wrapper for 'Update page' action.
@@ -428,7 +451,7 @@ class NotionDatabase:
         for prop_name, prop_value in properties.items():
             prop = self.properties.get(prop_name, None)
             if prop is None:
-                raise ValueError("Unknown property: {prop_name}")
+                raise ValueError(f"Unknown property: {prop_name}")
             value = generate_value(prop.config_type, prop_value)
             validated_properties[prop_name] = value
 
