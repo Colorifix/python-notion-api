@@ -295,15 +295,11 @@ A subclass of NotionPage can be used to fully recreate rollups and formulas (see
 The official Notion API doesn't yet support uploading files. As an alternative, it is possible to upload files to GDrive and use the 
 link in a column of type File.
 
-To configure it, set the env variable `GDRIVE_CONF` to the location of a json configuration file with the following structure:
+To configure it, set the env variable `CLIENT_CONFIG_FILE` to the location of a json configuration file with the OAuth config file and the env variable `CREDENTIAlS` to the location of a json configuration file with the OAuth credentials. 
 
-```json
-'GDRIVE': {
-    'CLIENT_CONFIG_FILE': 'path_to_oauth_config_file'
-    'CREDENTIALS': 'path_to_oauth_credentials_file',
-    'SHARED_DRIVE': 'id_of_shared_drive_to_use',
-}
-```
+To run the tests, set the env variable `PARENT_ID` to the folder id of where to run the tests.
+
+Further information on how to set up your google drive authentication can be found [here](https://support.google.com/cloud/answer/6158849?hl=en&ref_topic=3473162).
 
 Example:
 
@@ -313,8 +309,18 @@ from python_notion_api.models.common import File
 
 api = NotionAPI(access_token='secret_token')
 page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-page.set('File Property', [File.from_file_path(file_path=file_path)])
+file = File.from_file_path(
+    file=file_path,
+    parent_id="xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    file_name="My File on GDrive",
+    format="pdf"
+)
+page.set('Files Property',[file])
 ```
+
+The above example is specific to Files & Media properties. To upload a file to a URL property use `page.set("URL Property", file)`.
+
+Instead of a file path, a BytesIO object can be uploaded using the `File.from_stream` method.
 
 ## Requirements
 

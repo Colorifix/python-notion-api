@@ -1,10 +1,11 @@
 from datetime import date, datetime
+from io import BytesIO
 import os
 from typing import Dict, List, Literal, Optional, Union
 
 from python_notion_api.models.fields import idField, typeField
 from python_notion_api.gdrive import GDrive
-from pydantic import (AnyUrl, BaseModel)
+from pydantic import BaseModel
 
 
 class LinkObject(BaseModel):
@@ -22,9 +23,33 @@ class File(BaseModel):
     url: str
 
     @classmethod
-    def from_file_path(cls, file_path: str, parent_id=None):
+    def from_file_path(cls, file_path: str, parent_id: str):
         gdrive = GDrive()
-        file = gdrive.upload_file(file_path=file_path, parent_id=parent_id)
+        file = gdrive.upload_file(
+            file=file_path,
+            parent_id=parent_id,
+            file_name=os.path.basename(file_path)
+        )
+        return cls(
+            name=file.get("title"),
+            url=file.get("alternateLink")
+        )
+
+    @classmethod
+    def from_stream(
+        cls,
+        stream: BytesIO,
+        parent_id: str,
+        file_name: str,
+        format: str
+    ):
+        gdrive = GDrive()
+        file = gdrive.upload_file(
+            file=stream,
+            parent_id=parent_id,
+            file_name=file_name,
+            format=format
+        )
         return cls(
             name=file.get("title"),
             url=file.get("alternateLink")

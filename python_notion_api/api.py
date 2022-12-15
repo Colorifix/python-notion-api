@@ -82,6 +82,9 @@ class NotionPage:
 
         Args:
             blocks: List of Blocks to add
+
+        Returns:
+            Iterator of blocks is returned.
         """
         data = {
             "children": [
@@ -98,8 +101,9 @@ class NotionPage:
     def get_blocks(self) -> BlockIterator:
         """
         Get an iterater of all blocks in the page
-        Returns:
 
+        Returns:
+            Iterator of blocks is returned.
         """
 
         generator = self._api._get_iterate(
