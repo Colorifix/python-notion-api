@@ -21,7 +21,7 @@ class GDrive:
         "xls": 'application/vnd.ms-excel',
         "xlsx": 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         "xml": 'text/xml',
-        "csv":'text/csv',
+        "csv": 'text/csv',
         "pdf": 'application/pdf',
         "php": 'application/x-httpd-php',
         "jpg": 'image/jpeg',
@@ -35,7 +35,7 @@ class GDrive:
         "mp3": 'audio/mpeg',
         "zip": 'application/zip',
         "rar": 'application/rar',
-        "tar":'application/tar',
+        "tar": 'application/tar',
         "arj": 'application/arj',
         "cab": 'application/cab',
         "html": 'text/html'
@@ -101,7 +101,8 @@ class GDrive:
             file: an in memory file or a path to a file
             parent_id: id of the parent folder on google drive
             file_name: name of file on drive
-            format: file format. must be supplied if memory file. default is png.
+            format: file format. must be supplied if memory file. default 
+                is png.
         """
         gfile = self.find(file_name, parent_id)
 
@@ -115,10 +116,10 @@ class GDrive:
             if isinstance(file, str):
                 gfile = self.gdrive.CreateFile(data)
                 gfile.SetContentFile(file)
-            
+
             else:
                 try:
-                    data['mimeType'] =  self._mime_map[format]
+                    data['mimeType'] = self._mime_map[format]
                 except KeyError as e:
                     raise KeyError(
                         f"File type {e} is currently not supported for"
@@ -162,3 +163,28 @@ class GDrive:
 
         else:
             return None
+
+    def create_folder(
+        self,
+        folder_name: str,
+        parent_id: str
+    ):
+        """Creates a folder with the given name inside of the specified
+        parent folder. If a folder with the same name already exists, it 
+        returns a pointer to it.
+
+        Args:
+            folder_name: name of the folder
+            parent_id: id of the parent folder
+        """
+        gfolder = self.find(folder_name, parent_id)
+        if gfolder is None:
+            gfolder = self.gdrive.CreateFile(
+                {
+                    'title': folder_name,
+                    'mimeType': "application/vnd.google-apps.folder",
+                    'parents': [{'id': parent_id}]
+                }
+            )
+            gfolder.Upload()
+        return gfolder
