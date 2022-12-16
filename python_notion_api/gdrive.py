@@ -38,7 +38,8 @@ class GDrive:
         "tar": 'application/tar',
         "arj": 'application/arj',
         "cab": 'application/cab',
-        "html": 'text/html'
+        "html": 'text/html',
+        "folder": "application/vnd.google-apps.folder"
     }
 
     def __init__(self):
@@ -88,14 +89,14 @@ class GDrive:
         else:
             raise ValueError(f"There all multiples matches for: {name}")
 
-    def upload_file(
+    def add_media(
         self,
-        file: Union[BytesIO, str],
         parent_id: str,
         file_name: str,
+        file: Union[BytesIO, str, None] = None,
         format: str = "png"
     ):
-        """Upload file to google drive.
+        """Upload file or folder to google drive.
 
         Args:
             file: an in memory file or a path to a file
@@ -105,6 +106,9 @@ class GDrive:
                 is png.
         """
         gfile = self.find(file_name, parent_id)
+
+        if file is None:
+            format="folder"
 
         if gfile is None:
 
@@ -126,7 +130,8 @@ class GDrive:
                         + "uploading."
                     )
                 gfile = self.gdrive.CreateFile(data)
-                gfile.content = file
+                if file:
+                    gfile.content = file
 
         gfile.Upload()
 
@@ -163,28 +168,3 @@ class GDrive:
 
         else:
             return None
-
-    def create_folder(
-        self,
-        folder_name: str,
-        parent_id: str
-    ):
-        """Creates a folder with the given name inside of the specified
-        parent folder. If a folder with the same name already exists, it 
-        returns a pointer to it.
-
-        Args:
-            folder_name: name of the folder
-            parent_id: id of the parent folder
-        """
-        gfolder = self.find(folder_name, parent_id)
-        if gfolder is None:
-            gfolder = self.gdrive.CreateFile(
-                {
-                    'title': folder_name,
-                    'mimeType': "application/vnd.google-apps.folder",
-                    'parents': [{'id': parent_id}]
-                }
-            )
-            gfolder.Upload()
-        return gfolder

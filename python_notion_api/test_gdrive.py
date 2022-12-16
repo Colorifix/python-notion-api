@@ -1,5 +1,4 @@
-# from python_notion_api.gdrive import GDrive
-from gdrive import GDrive
+from python_notion_api.gdrive import GDrive
 
 import unittest
 import os
@@ -7,13 +6,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 
-
 class _TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
         cls.gdrive = GDrive()
         cls.PARENT_ID = os.environ['PARENT_ID']
+        cls.FOLDER_NAME = "TestFolder"
         cls.DATAFRAME = pd.DataFrame(
             {
                 "Test1": [420, 380, 390],
@@ -54,29 +53,36 @@ class _TestBase(unittest.TestCase):
 
 class TestGDrive(_TestBase):
 
-    def test_upload_file(self):
-        gfile = self.gdrive.upload_file(
-            self.BUFFER,
-            self.PARENT_ID,
-            self.IMG_FILE
-        )
-        self.assertEqual(gfile['originalFilename'], self.IMG_FILE)
-
     def test_find(self):
-        gfile = self.gdrive.upload_fig(
-            self.BUFFER,
-            self.IMG_FILE,
-            self.PARENT_ID
+        gfile = self.gdrive.add_media(
+            file=self.BUFFER,
+            file_name=self.IMG_FILE,
+            parent_id=self.PARENT_ID
         )
         gfile = self.gdrive.find(self.IMG_FILE, self.PARENT_ID)
         self.assertIsNotNone(gfile)
 
+    def test_upload_file(self):
+        gfile = self.gdrive.add_media(
+            file=self.BUFFER,
+            parent_id=self.PARENT_ID,
+            file_name=self.IMG_FILE
+        )
+        self.assertEqual(gfile['originalFilename'], self.IMG_FILE)
+
+    def test_add_folder(self):
+        gfile = self.gdrive.add_media(
+            parent_id=self.PARENT_ID,
+            file_name=self.FOLDER_NAME
+        )
+        self.assertIsNotNone(gfile)
+
     def test_get_dataframe(self):
         self.DATAFRAME.to_excel(self.DATAFRAME_FILE_PATH, index=False)
-        gfile = self.gdrive.upload_file(
-            self.DATAFRAME_FILE_PATH,
-            self.PARENT_ID,
-            self.DATAFRAME_FILE
+        gfile = self.gdrive.add_media(
+            file=self.DATAFRAME_FILE_PATH,
+            parent_id=self.PARENT_ID,
+            file_name=self.DATAFRAME_FILE
         )
         dataframe = self.gdrive.get_dataframe(
             self.DATAFRAME_FILE,
