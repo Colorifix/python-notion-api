@@ -25,7 +25,7 @@ class File(BaseModel):
     @classmethod
     def from_file_path(cls, file_path: str, parent_id: str):
         gdrive = GDrive()
-        file = gdrive.upload_file(
+        file = gdrive.add_media(
             file=file_path,
             parent_id=parent_id,
             file_name=os.path.basename(file_path)
@@ -44,7 +44,7 @@ class File(BaseModel):
         format: str
     ):
         gdrive = GDrive()
-        file = gdrive.upload_file(
+        file = gdrive.add_media(
             file=stream,
             parent_id=parent_id,
             file_name=file_name,
