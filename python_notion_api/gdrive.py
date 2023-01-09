@@ -94,7 +94,8 @@ class GDrive:
         parent_id: str,
         file_name: str,
         file: Union[BytesIO, str, None] = None,
-        format: str = "png"
+        format: str = "png",
+        overwrite: bool = False
     ):
         """Upload file or folder to google drive.
 
@@ -103,9 +104,15 @@ class GDrive:
             parent_id: id of the parent folder on google drive
             file_name: name of file on drive
             format: file format. must be supplied if memory file. default 
-                is png.
+                is png
+            overwrite: if set to true it will overwrite any existing file with
+                the same name
         """
-        gfile = self.find(file_name, parent_id)
+        
+        if overwrite is False:
+            gfile = self.find(file_name, parent_id)
+        else:
+            gfile = None
 
         if file is None:
             format="folder"

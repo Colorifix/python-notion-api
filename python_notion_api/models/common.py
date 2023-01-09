@@ -23,12 +23,18 @@ class File(BaseModel):
     url: str
 
     @classmethod
-    def from_file_path(cls, file_path: str, parent_id: str):
+    def from_file_path(
+        cls,
+        file_path: str,
+        parent_id: str,
+        overwrite: bool = False
+    ):
         gdrive = GDrive()
         file = gdrive.add_media(
             file=file_path,
             parent_id=parent_id,
-            file_name=os.path.basename(file_path)
+            file_name=os.path.basename(file_path),
+            overwrite=overwrite
         )
         return cls(
             name=file.get("title"),
@@ -41,14 +47,16 @@ class File(BaseModel):
         stream: BytesIO,
         parent_id: str,
         file_name: str,
-        format: str
+        format: str,
+        overwrite: bool = False
     ):
         gdrive = GDrive()
         file = gdrive.add_media(
             file=stream,
             parent_id=parent_id,
             file_name=file_name,
-            format=format
+            format=format,
+            overwrite=overwrite
         )
         return cls(
             name=file.get("title"),
