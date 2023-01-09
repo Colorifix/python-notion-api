@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 
+
 class _TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
