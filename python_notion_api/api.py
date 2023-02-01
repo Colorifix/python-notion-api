@@ -42,13 +42,15 @@ class NotionPage:
     # For use in subclasses
     special_properties = {}
 
-    def __init__(self, api, page_id, database=None):
+    def __init__(self, api, page_id, obj=None, database=None):
         self._api = api
         self._page_id = page_id
-        self._object = None
+        self._object = obj
         self.database = database
 
-        self._object = self._api._get(endpoint=f'pages/{self._page_id}')
+        if self._object is None:
+            self._object = self._api._get(endpoint=f'pages/{self._page_id}')
+
         self._alive = None
 
         if self._object is None:
@@ -112,7 +114,7 @@ class NotionPage:
         return BlockIterator(generator)
 
     def get(
-        self, prop_name: str, cache: bool = True
+        self, prop_name: str, cache: bool = True, safety_off: bool = False
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """
         First checks if the property is 'special', if so, will call the special
@@ -121,6 +123,10 @@ class NotionPage:
 
         Args:
             prop_name: Name of the property to retrieve.
+            cache: Boolean to decide whether to return the info from the page
+                or query the API again.
+            safety_off: If `True` will use cached values of rollups and
+                formulas
         """
         if prop_name in self.special_properties:
             # For subclasses of NotionPage
@@ -132,10 +138,14 @@ class NotionPage:
             assert isinstance(attr, PropertyValue)
             return attr
         else:
-            return self._direct_get(prop_name=prop_name, cache=cache)
+            return self._direct_get(
+                prop_name=prop_name,
+                cache=cache,
+                safety_off=safety_off
+            )
 
     def _direct_get(
-        self, prop_name: str, cache: bool = True
+        self, prop_name: str, cache: bool = True, safety_off: bool = False
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """Wrapper for 'Retrieve a page property item' action.
 
@@ -145,6 +155,8 @@ class NotionPage:
             prop_name: Name of the property to retrieve.
             cache: Boolean to decide whether to return the info from the page
                 or query the API again.
+            safety_off: If `True` will use cached values of rollups and
+                formulas
         """
         if prop_name in self._object.properties:
             prop = self._object.properties[prop_name]
@@ -155,7 +167,10 @@ class NotionPage:
 
             # We need to always query the API for formulas and rollups as
             # otherwise we might get incorrect values.
-            if prop_type in ('formula', 'rollup'):
+            if (
+                safety_off is False
+                and prop_type in ('formula', 'rollup')
+            ):
                 cache = False
 
             if (cache and not obj.has_more):
@@ -391,7 +406,8 @@ class NotionDatabase:
             data=data
         ):
             yield cast_cls(
-                api=self._api, database=self, page_id=item.page_id
+                api=self._api, database=self, page_id=item.page_id,
+                obj=item
             )
 
     @property
