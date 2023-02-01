@@ -57,6 +57,13 @@ class SelectFilterCondition(BaseModel):
     is_not_empty: Optional[Literal[True]]
 
 
+class StatusFilterCondition(BaseModel):
+    equals: Optional[str]
+    does_not_equal: Optional[str]
+    is_empty: Optional[Literal[True]]
+    is_not_empty: Optional[Literal[True]]
+
+
 class MultiSelectFilterCondition(BaseModel):
     contains: Optional[str]
     does_not_contain: Optional[str]
@@ -123,6 +130,10 @@ class CheckboxFilter(PropertyFilter):
 
 class SelectFilter(PropertyFilter):
     select: SelectFilterCondition
+
+
+class StatusFilter(PropertyFilter):
+    status: StatusFilterCondition
 
 
 class MultiSelectFilter(PropertyFilter):
