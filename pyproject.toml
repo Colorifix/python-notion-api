@@ -6,7 +6,8 @@ authors = [
     "Mihails <mihails.delmans@colorifix.com>",
 	"Paula Fernandez <paula@friends.colorifix.com>",
     "Michael Hall <michael.hall@colorifix.com>",
-    "Helena Saunders <helena.saunders@colorifix.com>"
+    "Helena Saunders <helena.saunders@colorifix.com>",
+    "Rodolfo Marques <rodolfo.marques@colorifix.com>"
 ]
 
 [tool.poetry.dependencies]
