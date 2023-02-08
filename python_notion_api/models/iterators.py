@@ -63,7 +63,7 @@ class RollupPropertyItemIterator(PropertyItemIterator):
                 )(
                     id=self.property_id,
                     init=getattr(item, item.property_type)
-                ).value
+                )
                 for item in items
             ]
         elif prop_type == "number":
