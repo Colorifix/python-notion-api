@@ -416,11 +416,27 @@ class FormulaPropertyValue(PropertyValue):
 class RollupPropertyValue(PropertyValue):
     _type_map = {
         RollupObject: "leave_unchanged",
+        List: "validate_array"
     }
     _set_field = 'rollup'
 
-    init: excluded(Optional[RollupObject])
+    init: excluded(Optional[Union[List, RollupObject]])
     rollup: RollupObject
+
+    @classmethod
+    def validate_array(cls, init: List):
+        first_item = init[0]
+
+        from python_notion_api.models import PropertyItem
+
+        if isinstance(first_item, PropertyItem):
+            init = [item.dict(by_alias=True) for item in init]
+
+        return RollupObject(
+            function="show_original",
+            type="array",
+            array=init
+        )
 
     @property
     def value(self):

@@ -97,6 +97,14 @@ class FormulaFilterCondition(BaseModel):
     date: Optional[DateFilterCondition]
 
 
+class RollupFilterCondition(BaseModel):
+    any: Optional["PropertyFilter"]
+    every: Optional["PropertyFilter"]
+    none: Optional["PropertyFilter"]
+    number: Optional[NumberFilterCondition]
+    date: Optional[DateFilterCondition]
+
+
 class BaseFilter(BaseModel, extra=Extra.ignore):
     @root_validator(pre=True)
     def validate_values(cls, values):
@@ -109,7 +117,7 @@ class BaseFilter(BaseModel, extra=Extra.ignore):
 
 
 class PropertyFilter(BaseFilter):
-    filter_property: str = propertyField
+    filter_property: Optional[str] = propertyField
 
 
 class RichTextFilter(PropertyFilter):
@@ -160,6 +168,10 @@ class FormulaFilter(PropertyFilter):
     formula: FormulaFilterCondition
 
 
+class RollupFilter(PropertyFilter):
+    rollup: RollupFilterCondition
+
+
 class TimestampFilter(BaseFilter):
     timestamp: str
 
@@ -196,5 +208,6 @@ def and_filter(filters: List[FilterItem]):
     return AndFilter(**{"and": filters})
 
 
+RollupFilterCondition.update_forward_refs()
 AndFilter.update_forward_refs()
 OrFilter.update_forward_refs()
