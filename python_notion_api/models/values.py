@@ -425,6 +425,13 @@ class RollupPropertyValue(PropertyValue):
 
     @classmethod
     def validate_array(cls, init: List):
+        if len(init) == 0:
+            return RollupObject(
+                function="show_original",
+                type="array",
+                array=[]
+            )
+
         first_item = init[0]
 
         from python_notion_api.models import PropertyItem

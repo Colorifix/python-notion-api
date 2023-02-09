@@ -6,10 +6,11 @@ from python_notion_api.models.blocks import Block
 
 
 class PropertyItemIterator:
-    def __init__(self, generator, property_type, property_id):
+    def __init__(self, generator, property_item):
         self.generator = generator
-        self.property_type = property_type
-        self.property_id = property_id
+        self.property_item = property_item
+        self.property_type = property_item.property_type
+        self.property_id = property_item.property_id
         self._value = None
 
     def __iter__(self):
@@ -40,16 +41,10 @@ class PropertyItemIterator:
 class RollupPropertyItemIterator(PropertyItemIterator):
     def _get_value(self):
         items = []
-        last_prop = None
+        prop_type = self.property_item.rollup.rollup_type
 
         for item, prop in self.generator:
             items.append(item)
-            last_prop = prop
-
-        if last_prop is None:
-            return None
-
-        prop_type = last_prop["rollup"]["type"]
 
         if prop_type == "incomplete":
             raise ValueError("Got an incomplete rollup. Sorry")
@@ -79,13 +74,13 @@ class RollupPropertyItemIterator(PropertyItemIterator):
             raise ValueError("Got an unknown rollup type: '{prop_type}'")
 
 
-def create_property_iterator(generator, property_type, property_id):
-    if property_type == "rollup":
+def create_property_iterator(generator, property_item):
+    if property_item.property_type == "rollup":
         return RollupPropertyItemIterator(
-            generator, property_type, property_id
+            generator, property_item
         )
     else:
-        return PropertyItemIterator(generator, property_type, property_id)
+        return PropertyItemIterator(generator, property_item)
 
 
 class BlockIterator:

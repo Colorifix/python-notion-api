@@ -185,7 +185,7 @@ class NotionPage:
                 generator = self._api._get_iterate(
                     endpoint=f'pages/{self._page_id}/properties/{prop_id}'
                 )
-                return create_property_iterator(generator, prop_type, prop_id)
+                return create_property_iterator(generator, obj)
 
             elif isinstance(ret, PropertyItem):
                 return PropertyValue.from_property_item(ret)
