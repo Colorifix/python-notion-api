@@ -22,9 +22,8 @@ from python_notion_api.models.properties import NotionObject, PropertyItem
 from python_notion_api.models.sorts import Sort
 from python_notion_api.models.values import PropertyValue, generate_value
 from pydantic import BaseModel
-from requests import Session
-from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3 import PoolManager
 
 
 class NotionPage:
@@ -403,7 +402,8 @@ class NotionDatabase:
 
         for item in self._api._post_iterate(
             endpoint=f'databases/{self._database_id}/query',
-            data=data
+            data=data,
+            retry_strategy=self._api.post_retry_strategy
         ):
             yield cast_cls(
                 api=self._api, database=self, page_id=item.page_id,
@@ -517,23 +517,26 @@ class NotionAPI:
         self._base_url = "https://api.notion.com/v1/"
         self._api_version = api_version
 
-        retry_strategy = Retry(
+        self.default_retry_strategy = Retry(
             total=3,
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "OPTIONS"]
         )
+        self.post_retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"]
+        )
 
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self._http = Session()
-
-        self._http.mount("https://", adapter)
+        self._http = PoolManager(retries=self.default_retry_strategy)
 
     def _request(
             self, request_type: Literal['get', 'post', 'patch'],
             endpoint: str = '',
             params: Dict[str, Any] = {},
             data: Optional[str] = None,
-            cast_cls: Type[NotionObjectBase] = NotionObject
+            cast_cls: Type[NotionObjectBase] = NotionObject,
+            retry_strategy: Retry = None
             ) -> Optional[NotionObject]:
         """Main request handler.
 
@@ -549,7 +552,6 @@ class NotionAPI:
                 request to.
         """
         url = self._base_url + endpoint
-        request = getattr(self._http, request_type)
 
         headers = {
             'Authorization': f'Bearer {self._access_token}',
@@ -558,25 +560,29 @@ class NotionAPI:
             'Accept': 'application/json'
         }
 
-        response = request(
+        response = self._http.request(
+            request_type,
             url,
-            params=params,
-            data=data,
-            headers=headers
+            fields=params,
+            body=data,
+            headers=headers,
+            retries=retry_strategy
         )
 
-        if response.status_code == 200:
-            return cast_cls.from_obj(response.json())
+        decoded_data = response.data.decode("utf-8")
+        if response.status == 200:
+            return cast_cls.from_obj(json.loads(decoded_data))
         else:
             logger.error(
                 f"Request to {url} failed:"
-                f"\n{response.status_code}\n{response.text}"
+                f"\n{response.status}\n{decoded_data}"
             )
 
     def _post(self,
               endpoint: str,
               data: Optional[str] = None,
-              cast_cls: Type[NotionObjectBase] = NotionObject
+              cast_cls: Type[NotionObjectBase] = NotionObject,
+              retry_strategy: Retry = None
               ) -> Optional[NotionObject]:
         """Wrapper for post requests.
 
@@ -593,7 +599,8 @@ class NotionAPI:
             request_type='post',
             endpoint=endpoint,
             data=data,
-            cast_cls=cast_cls
+            cast_cls=cast_cls,
+            retry_strategy=retry_strategy
         )
 
     def _get(self, endpoint: str,
@@ -643,7 +650,8 @@ class NotionAPI:
         )
 
     def _post_iterate(self, endpoint: str,
-                      data: Dict[str, str] = {}
+                      data: Dict[str, str] = {},
+                      retry_strategy: Retry = None
                       ) -> Generator[PropertyItem, None, None]:
         """Wrapper for post requests where expected return type is Pagination.
 
@@ -668,7 +676,8 @@ class NotionAPI:
 
             response = self._post(
                 endpoint=endpoint,
-                data=json.dumps(data)
+                data=json.dumps(data),
+                retry_strategy=retry_strategy
             )
 
             for item in response.results:
