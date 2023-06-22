@@ -6,7 +6,8 @@ from loguru import logger
 
 from python_notion_api.models.common import (
     DateObject, File, FileObject, FormulaObject, RelationObject,
-    RichTextObject, RollupObject, SelectObject, StatusObject
+    RichTextObject, RollupObject, SelectObject, StatusObject,
+    UniqueIDObject
 )
 from python_notion_api.models.objects import User
 from pydantic import (BaseModel, Field, ValidationError, parse_obj_as,
@@ -520,6 +521,37 @@ class LastEditedByPropertyValue(PropertyValue):
         return self.last_edited_by.name
 
 
+class UniqueIDPropertyValue(PropertyValue):
+    _type_map = {
+        UniqueIDObject: "leave_unchanged",
+        int: "validate_int",
+        str: "validate_str"
+    }
+
+    _set_field = 'unique_id'
+
+    init: excluded(Optional[Union[int, str, UniqueIDObject]])
+    unique_id: UniqueIDObject
+
+    @classmethod
+    def validate_int(cls, init: int):
+        return UniqueIDObject(
+            number=init
+        )
+
+    @classmethod
+    def validate_str(cls, init: str):
+        parts = init.split('-')
+        return UniqueIDObject(
+            prefix=parts[0],
+            number=int(parts[1])
+        )
+
+    @property
+    def value(self):
+        return self.unique_id.number
+
+
 def get_value_class(property_type):
     _class_map = {
         "title": TitlePropertyValue,
@@ -541,7 +573,8 @@ def get_value_class(property_type):
         "last_edited_time": LastEditedTimePropertyValue,
         "created_time": CreatedTimePropertyValue,
         "rollup": RollupPropertyValue,
-        "formula": FormulaPropertyValue
+        "formula": FormulaPropertyValue,
+        "unique_id": UniqueIDPropertyValue
     }
     return _class_map.get(property_type, None)
 

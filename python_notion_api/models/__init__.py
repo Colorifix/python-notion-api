@@ -21,7 +21,8 @@ from python_notion_api.models.common import (
     SelectObject,
     StatusObject,
     DateObject,
-    RelationObject
+    RelationObject,
+    UniqueIDObject
 )
 
 from python_notion_api.models.values import (
@@ -62,7 +63,8 @@ from python_notion_api.models.properties import (
     CreatedByPropertyItem,
     LastEditedTimePropertyItem,
     LastEditedByPropertyItem,
-    RollupPropertyItem
+    RollupPropertyItem,
+    UniqueIDPropertyItem
 )
 
 from python_notion_api.models.paginations import (
@@ -180,6 +182,7 @@ __all__ = [
     "StatusObject",
     "DateObject",
     "RelationObject",
+    "UniqueIDObject",
 
     "FormulaPropertyValue",
     "RollupPropertyValue",
@@ -214,6 +217,7 @@ __all__ = [
     "CreatedByPropertyItem",
     "LastEditedTimePropertyItem",
     "LastEditedByPropertyItem",
+    "UniqueIDPropertyItem",
 
     "PagePagination",
     "PropertyItemPagination",
