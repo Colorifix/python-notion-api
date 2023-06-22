@@ -108,7 +108,7 @@ from python_notion_api.models.filters import (
     SelectFilter,
     MultiSelectFilter,
     DateFilter,
-    PeopleFiter,
+    PeopleFilter,
     FilesFilter,
     RelationFilter,
     FormulaFilter,

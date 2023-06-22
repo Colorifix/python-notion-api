@@ -152,7 +152,7 @@ class DateFilter(PropertyFilter):
     date: DateFilterCondition
 
 
-class PeopleFiter(PropertyFilter):
+class PeopleFilter(PropertyFilter):
     people: PeopleFilterCondition
 
 
