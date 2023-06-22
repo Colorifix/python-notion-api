@@ -36,7 +36,8 @@ class NotionPropertyConfiguration(NotionObjectBase):
         "created_by": "CreatedByPropertyConfiguration",
         "last_edited_time": "LastEditedTimePropertyConfiguration",
         "last_edited_by": "LastEditedTimePropertyConfiguration",
-        "status": "StatusPropertyConfiguration"
+        "status": "StatusPropertyConfiguration",
+        "unique_id": "UniqueIDPropertyConfiguration"
     }
 
     @property
@@ -71,7 +72,7 @@ class SelectPropertyConfiguration(NotionPropertyConfiguration):
 class StatusPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    staus: EmptyField
+    status: EmptyField
 
 
 class MultiSelectPropertyConfiguration(NotionPropertyConfiguration):
@@ -180,3 +181,9 @@ class LastEditedByPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
     last_edited_by: EmptyField
+
+
+class UniqueIDPropertyConfiguration(NotionPropertyConfiguration):
+    _class_key_field = None
+
+    unique_id: EmptyField

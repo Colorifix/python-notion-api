@@ -23,7 +23,8 @@ from python_notion_api.models.values import (
     SelectPropertyValue,
     StatusPropertyValue,
     TitlePropertyValue,
-    URLPropertyValue
+    URLPropertyValue,
+    UniqueIDPropertyValue
 )
 
 from python_notion_api.models.objects import (
@@ -57,7 +58,8 @@ class PropertyItem(NotionObject, PropertyValue):
         "rich_text": "RichTextPropertyItem",
         "people": "PeoplePropertyItem",
         "relation": "RelationPropertyItem",
-        "rollup": "RollupPropertyItem"
+        "rollup": "RollupPropertyItem",
+        "unique_id": "UniqueIDPropertyItem"
     }
 
     @property
@@ -163,3 +165,8 @@ class LastEditedByPropertyItem(PropertyItem, LastEditedByPropertyValue):
 class RollupPropertyItem(PropertyItem, RollupPropertyValue):
     _class_key_field = None
     property_type: str = Field(alias="type", default="rollup")
+
+
+class UniqueIDPropertyItem(PropertyItem, UniqueIDPropertyValue):
+    _class_key_field = None
+    property_type: str = Field(alias="type", default="unique_id")

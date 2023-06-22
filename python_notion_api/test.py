@@ -204,6 +204,10 @@ class TestPage(_TestBase):
         )
         self.assertIsNotNone(new_page)
 
+    def test_get_unique_id(self):
+        unique_id = self.new_page.get('Unique ID').value
+        self.assertIsInstance(unique_id, int)
+
 
 class TestRollups(_TestBase):
     @classmethod

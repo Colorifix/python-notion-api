@@ -180,3 +180,8 @@ class RollupObject(BaseModel):
     array: Optional[List]
     number: Optional[float]
     date: Optional[DateObject]
+
+
+class UniqueIDObject(BaseModel):
+    prefix: Optional[str]
+    number: int
