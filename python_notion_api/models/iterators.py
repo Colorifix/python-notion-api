@@ -42,9 +42,11 @@ class RollupPropertyItemIterator(PropertyItemIterator):
     def _get_value(self):
         items = []
         prop_type = self.property_item.rollup.rollup_type
+        last_prop = None
 
         for item, prop in self.generator:
             items.append(item)
+            last_prop = item
 
         if prop_type == "incomplete":
             raise ValueError("Got an incomplete rollup. Sorry")
@@ -62,9 +64,9 @@ class RollupPropertyItemIterator(PropertyItemIterator):
                 for item in items
             ]
         elif prop_type == "number":
-            return last_prop["rollup"]["number"]
+            return last_prop and last_prop["rollup"]["number"]
         elif prop_type == "date":
-            date = last_prop["rollup"]["date"]
+            date = last_prop and last_prop["rollup"]["date"]
             if date is not None:
                 return DateObject(**date)
             else:
