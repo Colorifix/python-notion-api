@@ -255,7 +255,7 @@ __all__ = [
     "SelectFilter",
     "MultiSelectFilter",
     "DateFilter",
-    "PeopleFiter",
+    "PeopleFilter",
     "FilesFilter",
     "RelationFilter",
     "FormulaFilter",
