@@ -46,7 +46,7 @@ class RollupPropertyItemIterator(PropertyItemIterator):
 
         for item, prop in self.generator:
             items.append(item)
-            last_prop = item
+            last_prop = prop
 
         if prop_type == "incomplete":
             raise ValueError("Got an incomplete rollup. Sorry")
