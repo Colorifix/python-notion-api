@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.2.0] - 2023/07/14
+
+### Fixed
+
+- undefined last_prop
+- Overwrite option overwrites existing file instead of creating a new one
+
 ## [0.1.0] - 2023/06/22
 
 ### Added
