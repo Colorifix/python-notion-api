@@ -110,7 +110,8 @@ class Pagination(NotionObject):
     _class_map = {
         "property_item": "PropertyItemPagination",
         "page": "PagePagination",
-        "block": "BlockPagination"
+        "block": "BlockPagination",
+        "page_or_database": "PageOrDatabasePagination",
     }
 
     @property
