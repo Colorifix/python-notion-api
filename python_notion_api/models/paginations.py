@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from python_notion_api.models.objects import Block, Database, Page, Pagination
 from python_notion_api.models.properties import PropertyItem
@@ -14,7 +14,7 @@ class PagePagination(Pagination):
 class PageOrDatabasePagination(Pagination):
     _class_key_field = None
 
-    results: List[Page | Database]
+    results: List[Union[Page, Database]]
 
 
 class PropertyItemPagination(Pagination):
