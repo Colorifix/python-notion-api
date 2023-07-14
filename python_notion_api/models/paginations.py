@@ -14,6 +14,7 @@ class PagePagination(Pagination):
 class PageOrDatabasePagination(Pagination):
     _class_key_field = None
 
+    page_or_database: Dict
     results: List[Union[Page, Database]]
 
 
