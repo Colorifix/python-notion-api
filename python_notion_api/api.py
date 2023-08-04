@@ -500,6 +500,7 @@ class NotionDatabase:
         return NotionPage(
             api=self._api,
             page_id=new_page.page_id,
+            obj=new_page,
             database=self
         )
 
