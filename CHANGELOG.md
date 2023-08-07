@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.3.0] - 2023/08/07
+
+### Fixed
+
+- Avoid getting page on page creation
+
 ## [0.2.0] - 2023/07/14
 
 ### Fixed
