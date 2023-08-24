@@ -15,9 +15,7 @@ from python_notion_api.models.iterators import (
 from python_notion_api.models.objects import (
     Block, Database, NotionObjectBase, Pagination, User
 )
-from python_notion_api.models.objects import (
-    Block, Database, NotionObjectBase, Pagination, User
-)
+
 from python_notion_api.models.properties import NotionObject, PropertyItem
 from python_notion_api.models.sorts import Sort
 from python_notion_api.models.values import PropertyValue, generate_value
@@ -48,7 +46,7 @@ class NotionPage:
         self.database = database
 
         if self._object is None:
-            self._object = self._api._get(endpoint=f'pages/{self._page_id}')
+            self.reload()
 
         self._alive = None
 
@@ -77,6 +75,26 @@ class NotionPage:
         archive_status = not val
         self._archive(archive_status)
         self._alive = val
+
+    def _get_prop_name(self, prop_key: str) -> Optional[str]:
+        """Gets propetry name from property key.
+
+        Args:
+            prop_key: Either a property name or property id.
+
+        Returns:
+            Property name or `None` if key is invalid.
+        """
+        _properties = self._object.properties
+        prop_name = next(
+            (
+                key for key in _properties
+                if key == prop_key or _properties[key]['id'] == prop_key
+            ),
+            None
+        )
+
+        return prop_name
 
     def add_blocks(self, blocks: List[Block]) -> BlockIterator:
         """Wrapper for add new blocks to an existing page.
@@ -113,7 +131,7 @@ class NotionPage:
         return BlockIterator(generator)
 
     def get(
-        self, prop_name: str, cache: bool = True, safety_off: bool = False
+        self, prop_key: str, cache: bool = True, safety_off: bool = False
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """
         First checks if the property is 'special', if so, will call the special
@@ -121,75 +139,78 @@ class NotionPage:
         If not, gets the property through the api.
 
         Args:
-            prop_name: Name of the property to retrieve.
+            prop_key: Name or id of the property to retrieve.
             cache: Boolean to decide whether to return the info from the page
                 or query the API again.
             safety_off: If `True` will use cached values of rollups and
                 formulas
         """
-        if prop_name in self.special_properties:
+        if prop_key in self.special_properties:
             # For subclasses of NotionPage
             # Any special properties should have an associated function
             # in the subclass, and a mapping from the property name
             # to the function name in self.special_properties
             # Those functions must return PropertyItemIterator or PropertyItem
-            attr = getattr(self, self.special_properties[prop_name])()
+            attr = getattr(self, self.special_properties[prop_key])()
             assert isinstance(attr, PropertyValue)
             return attr
         else:
             return self._direct_get(
-                prop_name=prop_name,
+                prop_key=prop_key,
                 cache=cache,
                 safety_off=safety_off
             )
 
     def _direct_get(
-        self, prop_name: str, cache: bool = True, safety_off: bool = False
+        self, prop_key: str, cache: bool = True, safety_off: bool = False
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """Wrapper for 'Retrieve a page property item' action.
 
         Will return whatever is retrieved from the API, no special cases.
 
         Args:
-            prop_name: Name of the property to retrieve.
+            prop_key: Name or id of the property to retrieve.
             cache: Boolean to decide whether to return the info from the page
                 or query the API again.
             safety_off: If `True` will use cached values of rollups and
                 formulas
         """
-        if prop_name in self._object.properties:
-            prop = self._object.properties[prop_name]
-            obj = PropertyItem.from_obj(prop)
+        prop_name = self._get_prop_name(prop_key)
 
-            prop_id = obj.property_id
-            prop_type = obj.property_type
-
-            # We need to always query the API for formulas and rollups as
-            # otherwise we might get incorrect values.
-            if (
-                safety_off is False
-                and prop_type in ('formula', 'rollup')
-            ):
-                cache = False
-
-            if (cache and not obj.has_more):
-                return PropertyValue.from_property_item(obj)
-
-            ret = self._api._get(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}',
-                params={"page_size": 20}
-            )
-
-            if isinstance(ret, Pagination):
-                generator = self._api._get_iterate(
-                    endpoint=f'pages/{self._page_id}/properties/{prop_id}'
-                )
-                return create_property_iterator(generator, obj)
-
-            elif isinstance(ret, PropertyItem):
-                return PropertyValue.from_property_item(ret)
-        else:
+        if prop_name is None:
             raise ValueError(f"Invalid property  name {prop_name}")
+
+        prop = self._object.properties[prop_name]
+
+        obj = PropertyItem.from_obj(prop)
+
+        prop_id = obj.property_id
+        prop_type = obj.property_type
+
+        # We need to always query the API for formulas and rollups as
+        # otherwise we might get incorrect values.
+        if (
+            safety_off is False
+            and prop_type in ('formula', 'rollup')
+        ):
+            cache = False
+
+        if (cache and not obj.has_more):
+            return PropertyValue.from_property_item(obj)
+
+        ret = self._api._get(
+            endpoint=f'pages/{self._page_id}/properties/{prop_id}',
+            params={"page_size": 20}
+        )
+
+        if isinstance(ret, Pagination):
+            generator = self._api._get_iterate(
+                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
+            )
+            return create_property_iterator(generator, obj)
+
+        elif isinstance(ret, PropertyItem):
+            return PropertyValue.from_property_item(ret)
 
     def _archive(self, archive_status=True) -> None:
         """Wrapper for 'Archive page' action if archive_status is True,
@@ -200,37 +221,81 @@ class NotionPage:
             data=json.dumps({"archived": archive_status})
         )
 
-    def set(self, prop_name: str, value: Any) -> None:
+    def set(self, prop_key: str, value: Any) -> None:
         """Wrapper for 'Update page' action.
 
         Args:
-            prop_name: Name of the property to update
+            prop_key: Name or id of the property to update
             value: A new value of the property
         """
 
-        if prop_name in self._object.properties:
-            prop_type = self._object.properties[prop_name]["type"]
+        prop_name = self._get_prop_name(prop_key=prop_key)
 
-            value = generate_value(prop_type, value)
-            request = NotionPage.PatchRequest(
-                properties={
-                    prop_name: value
-                }
-            )
-
-            data = request.json(
-                by_alias=True,
-                exclude_unset=True
-            )
-
-            self._api._patch(
-                endpoint=f'pages/{self._page_id}',
-                data=data
-            )
-        else:
+        if prop_name is None:
             raise ValueError(
                 f"Unknown property '{prop_name}'"
             )
+
+        prop_type = self._object.properties[prop_name]["type"]
+
+        value = generate_value(prop_type, value)
+        request = NotionPage.PatchRequest(
+            properties={
+                prop_name: value
+            }
+        )
+
+        data = request.json(
+            by_alias=True,
+            exclude_unset=True
+        )
+
+        self._api._patch(
+            endpoint=f'pages/{self._page_id}',
+            data=data
+        )
+
+    def update(self, properties: Dict[str, Any]) -> None:
+        """Update page with a dictionary of new values.
+
+        Args:
+            properties: A dictionary mapping property keys to new
+                values.
+        """
+        values = {}
+        for prop_key, value in properties.items():
+            if value is None:
+                continue
+            prop_name = self._get_prop_name(prop_key=prop_key)
+
+            if prop_name is None:
+                raise ValueError(
+                    f"Unknown property '{prop_name}'"
+                )
+
+            prop_type = self._object.properties[prop_name]["type"]
+
+            value = generate_value(prop_type, value)
+            values[prop_name] = value
+
+        request = NotionPage.PatchRequest(
+            properties=values
+        )
+
+        data = request.json(
+            by_alias=True,
+            exclude_unset=True
+        )
+
+        self._api._patch(
+            endpoint=f'pages/{self._page_id}',
+            data=data
+        )
+
+    def reload(self):
+        """Reloads page from Notion.
+        """
+        self._object = self._api._get(endpoint=f'pages/{self._page_id}')
 
     @property
     def properties(self) -> Dict[

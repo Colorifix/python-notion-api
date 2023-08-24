@@ -208,6 +208,36 @@ class TestPage(_TestBase):
         unique_id = self.new_page.get('Unique ID').value
         self.assertIsInstance(unique_id, int)
 
+    def test_get_by_id(self):
+        self.new_page.set('Email', self.TEST_EMAIL)
+        email = self.new_page.get('%3E%5Ehh', cache=False).value
+        self.assertEqual(email, self.TEST_EMAIL)
+
+    def test_set_by_id(self):
+        self.new_page.set('%3E%5Ehh', self.TEST_EMAIL)
+        email = self.new_page.get('Email', cache=False).value
+        self.assertEqual(email, self.TEST_EMAIL)
+
+    def test_update(self):
+        self.new_page.update(
+            properties={
+                '%3E%5Ehh': self.TEST_EMAIL,
+                'Phone': self.TEST_PHONE
+            }
+        )
+
+        email = self.new_page.get('Email', cache=False).value
+        phone = self.new_page.get('Phone', cache=False).value
+
+        self.assertEqual(email, self.TEST_EMAIL)
+        self.assertEqual(phone, self.TEST_PHONE)
+
+    def test_reload(self):
+        self.new_page.set('Email', self.TEST_EMAIL)
+        self.new_page.reload()
+        email = self.new_page.get('Email', cache=True).value
+        self.assertEqual(email, self.TEST_EMAIL)
+
 
 class TestRollups(_TestBase):
     @classmethod
