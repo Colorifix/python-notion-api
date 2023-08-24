@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.4.0] - 2023/08/24
+
+### Changed
+
+- property update methods
+
 ## [0.3.0] - 2023/08/07
 
 ### Fixed
