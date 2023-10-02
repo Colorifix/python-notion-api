@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-notion-api"
-version = "0.4.0"
+version = "0.5.0"
 description = "Python wrapper for the official Notion API"
 authors = [
     "Mihails <mihails.delmans@colorifix.com>",
