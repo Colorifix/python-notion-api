@@ -1,4 +1,5 @@
 import json
+from math import floor
 from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
 from loguru import logger
 
@@ -22,6 +23,7 @@ from python_notion_api.models.values import PropertyValue, generate_value
 from pydantic import BaseModel
 from requests.packages.urllib3.util.retry import Retry
 from requests.packages.urllib3 import PoolManager
+from requests.packages.urllib3.exceptions import MaxRetryError
 
 
 class NotionPage:
@@ -117,7 +119,10 @@ class NotionPage:
         )
         return BlockIterator(iter(new_blocks.results))
 
-    def get_blocks(self) -> BlockIterator:
+    def get_blocks(
+        self,
+        page_limit: int = None
+    ) -> BlockIterator:
         """
         Get an iterater of all blocks in the page
 
@@ -126,12 +131,14 @@ class NotionPage:
         """
 
         generator = self._api._get_iterate(
-            endpoint=f'blocks/{self._page_id}/children'
+            endpoint=f'blocks/{self._page_id}/children',
+            page_limit=page_limit
         )
         return BlockIterator(generator)
 
     def get(
-        self, prop_key: str, cache: bool = True, safety_off: bool = False
+        self, prop_key: str, cache: bool = True,
+        safety_off: bool = False, page_limit: int = None
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """
         First checks if the property is 'special', if so, will call the special
@@ -158,11 +165,13 @@ class NotionPage:
             return self._direct_get(
                 prop_key=prop_key,
                 cache=cache,
-                safety_off=safety_off
+                safety_off=safety_off,
+                page_limit=page_limit
             )
 
     def _direct_get(
-        self, prop_key: str, cache: bool = True, safety_off: bool = False
+        self, prop_key: str, cache: bool = True,
+        safety_off: bool = False, page_limit: int = None
     ) -> Union[PropertyValue, PropertyItemIterator]:
         """Wrapper for 'Retrieve a page property item' action.
 
@@ -200,12 +209,13 @@ class NotionPage:
 
         ret = self._api._get(
             endpoint=f'pages/{self._page_id}/properties/{prop_id}',
-            params={"page_size": 20}
+            params={"page_size": page_limit or self._api._page_limit}
         )
 
         if isinstance(ret, Pagination):
             generator = self._api._get_iterate(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
+                endpoint=f'pages/{self._page_id}/properties/{prop_id}',
+                page_limit=page_limit
             )
             return create_property_iterator(generator, obj)
 
@@ -350,14 +360,15 @@ class NotionBlock:
     def block_id(self) -> str:
         return self._block_id.replace("-", "")
 
-    def get_child_blocks(self) -> BlockIterator:
+    def get_child_blocks(self, page_limit: int = None) -> BlockIterator:
         """
         Get an iterater of all blocks in the block
         Returns:
 
         """
         generator = self._api._get_iterate(
-            endpoint=f'blocks/{self._block_id}/children'
+            endpoint=f'blocks/{self._block_id}/children',
+            page_limit=page_limit
         )
         return BlockIterator(generator)
 
@@ -435,7 +446,8 @@ class NotionDatabase:
     def query(self,
               filters: Optional[FilterItem] = None,
               sorts: Optional[List[Sort]] = None,
-              cast_cls=NotionPage
+              cast_cls=NotionPage,
+              page_limit: int = None
               ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
@@ -468,7 +480,8 @@ class NotionDatabase:
         for item in self._api._post_iterate(
             endpoint=f'databases/{self._database_id}/query',
             data=data,
-            retry_strategy=self._api.post_retry_strategy
+            retry_strategy=self._api.post_retry_strategy,
+            page_limit=page_limit
         ):
             yield cast_cls(
                 api=self._api, database=self, page_id=item.page_id,
@@ -579,10 +592,15 @@ class NotionAPI:
         api_version: Version of the notion API
     """
 
-    def __init__(self, access_token: str, api_version='2022-06-28'):
+    def __init__(
+        self, access_token: str, 
+        api_version='2022-06-28',
+        page_limit=20
+    ):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"
         self._api_version = api_version
+        self._page_limit = page_limit
 
         self.default_retry_strategy = Retry(
             total=5,
@@ -720,7 +738,8 @@ class NotionAPI:
 
     def _post_iterate(self, endpoint: str,
                       data: Dict[str, str] = {},
-                      retry_strategy: Retry = None
+                      retry_strategy: Retry = None,
+                      page_limit: int = None
                       ) -> Generator[PropertyItem, None, None]:
         """Wrapper for post requests where expected return type is Pagination.
 
@@ -733,30 +752,43 @@ class NotionAPI:
         """
         has_more = True
         cursor = None
+        page_size = page_limit or self._page_limit
 
         while has_more:
             data.update({
                 'start_cursor': cursor,
-                'page_size': 100
+                'page_size': page_size
             })
 
             if cursor is None:
                 data.pop('start_cursor')
 
-            response = self._post(
-                endpoint=endpoint,
-                data=json.dumps(data),
-                retry_strategy=retry_strategy
-            )
+            while page_size > 0:
+                try:
+                    response = self._post(
+                        endpoint=endpoint,
+                        data=json.dumps(data),
+                        retry_strategy=retry_strategy
+                    )
 
-            for item in response.results:
-                yield item
+                    for item in response.results:
+                        yield item
 
-            has_more = response.has_more
-            cursor = response.next_cursor
+                    has_more = response.has_more
+                    cursor = response.next_cursor
+
+                    break
+                except MaxRetryError as e:
+                    page_size = floor(page_size/2)
+                    if page_size == 0:
+                        raise e
+                    data.update({
+                        'page_size': page_size
+                    })
 
     def _get_iterate(self, endpoint: str,
-                     params: Dict[str, str] = {}
+                     params: Dict[str, str] = {},
+                     page_limit: int = None
                      ) -> Generator[PropertyItem, None, None]:
         """Wrapper for get requests where expected return type is Pagination.
 
@@ -769,33 +801,45 @@ class NotionAPI:
         """
         has_more = True
         cursor = None
+        page_size = page_limit or self._page_limit
 
         while has_more:
             params.update({
                 'start_cursor': cursor,
-                'page_size': 40
+                'page_size': page_size
             })
 
             if cursor is None:
                 params.pop('start_cursor')
 
-            response = self._get(
-                endpoint=endpoint,
-                params=params
-            )
+            while page_size > 0:
+                try:
+                    response = self._get(
+                        endpoint=endpoint,
+                        params=params
+                    )
 
-            if hasattr(response, 'property_item'):
-                # Required for rollups
-                property_item = response.property_item
-            else:
-                # property doesn't exist for Blocks
-                property_item = None
+                    if hasattr(response, 'property_item'):
+                        # Required for rollups
+                        property_item = response.property_item
+                    else:
+                        # property doesn't exist for Blocks
+                        property_item = None
 
-            for item in response.results:
-                yield item, property_item
+                    for item in response.results:
+                        yield item, property_item
 
-            has_more = response.has_more
-            cursor = response.next_cursor
+                    has_more = response.has_more
+                    cursor = response.next_cursor
+
+                    break
+                except MaxRetryError as e:
+                    page_size = floor(page_size/2)
+                    if page_size == 0:
+                        raise e
+                    params.update({
+                        'page_size': page_size
+                    })
 
     def get_database(self, database_id: str) -> NotionDatabase:
         """ Wrapper for 'Retrieve a database' action.
