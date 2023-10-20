@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from pydantic import BaseModel, AnyUrl
 from python_notion_api.models.common import (
     RichTextObject, FileObject, EmojiObject
@@ -322,3 +322,9 @@ class TableRowBlock(Block):
     _class_key_field = None
 
     table_row: TableRowBlockValue
+
+
+class UnsupportedBlock(Block):
+    _class_key_field = None
+
+    unsupported: dict

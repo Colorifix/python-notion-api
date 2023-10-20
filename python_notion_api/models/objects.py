@@ -162,7 +162,7 @@ class Block(NotionObject):
         "code", "child_page", "child_database", "embed", "image", "video",
         "file", "pdf", "bookmark", "equation", "divider", "table_of_contents",
         "breadcrumb", "column_list", "column", "link_preview", "template",
-        "link_to_page", "synced_block", "table", "table_row"
+        "link_to_page", "synced_block", "table", "table_row", "unsupported"
     ] = typeField
 
     _class_map = {
@@ -196,7 +196,8 @@ class Block(NotionObject):
         "link_to_page": "LinkToPageBlock",
         "synced_block": "SyncedBlock",
         "table": "TableBlock",
-        "table_row": "TableRowBlock"
+        "table_row": "TableRowBlock",
+        "unsupported": "UnsupportedBlock"
     }
     _block_map = {v: k for k, v in _class_map.items()}
 
