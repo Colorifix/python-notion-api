@@ -37,6 +37,9 @@ class NotionPage:
     class PatchRequest(BaseModel):
         properties: Dict[str, PropertyValue]
 
+    class AddBlocksRequest(BaseModel):
+        children: List[Block]
+
     # Map from property names to function names.
     # For use in subclasses
     special_properties = {}
@@ -107,15 +110,15 @@ class NotionPage:
         Returns:
             Iterator of blocks is returned.
         """
-        data = {
-            "children": [
-                block.dict(by_alias=True, exclude_unset=True)
-                for block in blocks
-            ]
-        }
+        request = NotionPage.AddBlocksRequest(
+            children=blocks
+        )
+
+        data = request.json(by_alias=True, exclude_unset=True, exclude_none=True)
+
         new_blocks = self._api._patch(
             endpoint=f'blocks/{self.page_id}/children',
-            data=json.dumps(data)
+            data=data
         )
         return BlockIterator(iter(new_blocks.results))
 

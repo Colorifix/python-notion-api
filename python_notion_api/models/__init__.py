@@ -157,7 +157,8 @@ from python_notion_api.models.blocks import (
     LinkToPageBlock,
     SyncedBlock,
     TableBlock,
-    TableRowBlock
+    TableRowBlock,
+    UnsupportedBlock
 )
 
 __all__ = [
@@ -300,5 +301,6 @@ __all__ = [
     "LinkToPageBlock",
     "SyncedBlock",
     "TableBlock",
-    "TableRowBlock"
+    "TableRowBlock",
+    "UnsupportedBlock"
 ]
