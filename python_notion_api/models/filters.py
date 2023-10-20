@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Extra, root_validator, StrictInt, StrictFloat
 
 from python_notion_api.models.fields import (andField, orField,
                                                   propertyField)
@@ -35,12 +35,12 @@ class TextFilterCondition(BaseModel):
 
 
 class NumberFilterCondition(BaseModel):
-    equals: Optional[int]
-    does_not_equal: Optional[int]
-    greater_than: Optional[int]
-    less_than: Optional[int]
-    greater_than_or_equal_to: Optional[int]
-    less_than_or_equal_to: Optional[int]
+    equals: Optional[Union[StrictInt, StrictFloat]]
+    does_not_equal: Optional[Union[StrictInt, StrictFloat]]
+    greater_than: Optional[Union[StrictInt, StrictFloat]]
+    less_than: Optional[Union[StrictInt, StrictFloat]]
+    greater_than_or_equal_to: Optional[Union[StrictInt, StrictFloat]]
+    less_than_or_equal_to: Optional[Union[StrictInt, StrictFloat]]
     is_empty: Optional[Literal[True]]
     is_not_empty: Optional[Literal[True]]
 
@@ -201,10 +201,42 @@ class OrFilter(BaseModel):
 
 
 def or_filter(filters: List[FilterItem]):
+    """
+    Combine filters with an OR condition.
+    Notion limits the number of items in an OR filter to 100.
+    If there are more than 100 items, we split into smaller ORfilters and
+    then join them in an ORFilter.
+    Notion limits the nesting to two-levels. If that changes, can use
+    'while' instead of 'if'
+    Args:
+        filters:
+
+    Returns:
+
+    """
+    if len(filters) > 100:
+        filters = [or_filter(filters[i:i + 100]) for i in
+                   range(0, len(filters) + 1, 100)]
     return OrFilter(**{"or": filters})
 
 
 def and_filter(filters: List[FilterItem]):
+    """
+    Combine filters with an AND condition.
+    Notion limits the number of items in an AND filter to 100.
+    If there are more than 100 items, we split into smaller ANDFilters and
+    then join them in an AND_filter.
+    Notion limits the nesting to two-levels. If that changes, can use
+    'while' instead of 'if'
+    Args:
+        filters:
+
+    Returns:
+
+    """
+    if len(filters) > 100:
+        filters = [and_filter(filters[i:i + 100]) for i in
+                   range(0, len(filters) + 1, 100)]
     return AndFilter(**{"and": filters})
 
 
