@@ -6,7 +6,7 @@ import os
 from python_notion_api import NotionAPI, File
 from python_notion_api.models.filters import (
     and_filter, or_filter,
-    SelectFilter, MultiSelectFilter
+    SelectFilter, MultiSelectFilter, NumberFilter
 )
 
 from python_notion_api.models.sorts import Sort
@@ -291,12 +291,42 @@ class TestDatabase(_TestBase):
         page = next(pages)
         self.assertEqual(page.get("Select").value, self.TEST_SELECT)
 
+    def test_large_and_filter(self):
+        pages = self.db.query(
+            filters=and_filter(
+                [
+                    NumberFilter(property='Number', equals=self.TEST_NUMBER)
+                ] +
+                [
+                    NumberFilter(property='Number', less_than=x) for x in
+                    range(int(self.TEST_NUMBER+2), int(self.TEST_NUMBER+110))
+                ]
+            )
+        )
+        page = next(pages)
+        self.assertEqual(page.get("Number").value, self.TEST_NUMBER)
+
     def test_or_filter(self):
         pages = self.db.query(
             filters=or_filter(
                 [
                     SelectFilter(property="Select", equals=self.TEST_SELECT),
                     MultiSelectFilter(property="Multi-select", contains="bar")
+                ]
+            )
+        )
+        page = next(pages)
+        self.assertEqual(page.get("Select").value, self.TEST_SELECT)
+
+    def test_large_or_filter(self):
+        pages = self.db.query(
+            filters=or_filter(
+                [
+                    SelectFilter(property="Select", equals=self.TEST_SELECT),
+                ] +
+                [
+                    SelectFilter(property='Select', equals=str(x)) for x in
+                    range(110)
                 ]
             )
         )
