@@ -1,15 +1,16 @@
+import os
 from datetime import date, datetime
 from io import BytesIO
-import os
 from typing import Dict, List, Literal, Optional, Union
 
-from python_notion_api.models.fields import idField, typeField
-from python_notion_api.gdrive import GDrive
 from pydantic import BaseModel
+
+from python_notion_api.gdrive import GDrive
+from python_notion_api.models.fields import idField, typeField
 
 
 class LinkObject(BaseModel):
-    link_type: Optional[Literal['url']] = typeField
+    link_type: Optional[Literal["url"]] = typeField
     url: str
 
 
@@ -24,22 +25,16 @@ class File(BaseModel):
 
     @classmethod
     def from_file_path(
-        cls,
-        file_path: str,
-        parent_id: str,
-        overwrite: bool = False
+        cls, file_path: str, parent_id: str, overwrite: bool = False
     ):
         gdrive = GDrive()
         file = gdrive.add_media(
             file=file_path,
             parent_id=parent_id,
             file_name=os.path.basename(file_path),
-            overwrite=overwrite
+            overwrite=overwrite,
         )
-        return cls(
-            name=file.get("title"),
-            url=file.get("alternateLink")
-        )
+        return cls(name=file.get("title"), url=file.get("alternateLink"))
 
     @classmethod
     def from_stream(
@@ -48,7 +43,7 @@ class File(BaseModel):
         parent_id: str,
         file_name: str,
         format: str,
-        overwrite: bool = False
+        overwrite: bool = False,
     ):
         gdrive = GDrive()
         file = gdrive.add_media(
@@ -56,12 +51,9 @@ class File(BaseModel):
             parent_id=parent_id,
             file_name=file_name,
             format=format,
-            overwrite=overwrite
+            overwrite=overwrite,
         )
-        return cls(
-            name=file.get("title"),
-            url=file.get("alternateLink")
-        )
+        return cls(name=file.get("title"), url=file.get("alternateLink"))
 
 
 class ExternalFile(BaseModel):
@@ -91,15 +83,12 @@ class FileObject(BaseModel):
         return cls(
             type="external",
             name=file.name,
-            external=ExternalFile(url=file.url)
+            external=ExternalFile(url=file.url),
         )
 
     @classmethod
     def from_url(cls, url: str):
-        return cls(
-            type="external",
-            external=ExternalFile(url=url)
-        )
+        return cls(type="external", external=ExternalFile(url=url))
 
 
 class RichTextObject(BaseModel):
@@ -116,20 +105,17 @@ class RichTextObject(BaseModel):
             plain_text=plain_text,
             href=None,
             annotations=dict(),
-            type='text',
-            text=text_obj
+            type="text",
+            text=text_obj,
         )
 
     @classmethod
     def from_file(cls, file=File):
         text_obj = TextObject(
-            content=file.name,
-            link=LinkObject(type='url', url=file.url)
+            content=file.name, link=LinkObject(type="url", url=file.url)
         )
         return RichTextObject(
-            plain_text=text_obj.content,
-            type='text',
-            text=text_obj
+            plain_text=text_obj.content, type="text", text=text_obj
         )
 
 

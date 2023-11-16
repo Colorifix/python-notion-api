@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import Field
 
+from python_notion_api.models.objects import NotionObject
 from python_notion_api.models.values import (
     CheckBoxPropertyValue,
     CreatedByPropertyValue,
@@ -23,12 +24,8 @@ from python_notion_api.models.values import (
     SelectPropertyValue,
     StatusPropertyValue,
     TitlePropertyValue,
+    UniqueIDPropertyValue,
     URLPropertyValue,
-    UniqueIDPropertyValue
-)
-
-from python_notion_api.models.objects import (
-    NotionObject
 )
 
 
@@ -56,10 +53,9 @@ class PropertyItem(NotionObject, PropertyValue):
         "people": "PeoplePropertyItem",
         "title": "TitlePropertyItem",
         "rich_text": "RichTextPropertyItem",
-        "people": "PeoplePropertyItem",
         "relation": "RelationPropertyItem",
         "rollup": "RollupPropertyItem",
-        "unique_id": "UniqueIDPropertyItem"
+        "unique_id": "UniqueIDPropertyItem",
     }
 
     @property

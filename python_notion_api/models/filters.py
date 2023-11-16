@@ -1,10 +1,9 @@
 import re
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Extra, root_validator, StrictInt, StrictFloat
+from pydantic import BaseModel, Extra, StrictFloat, StrictInt, root_validator
 
-from python_notion_api.models.fields import (andField, orField,
-                                                  propertyField)
+from python_notion_api.models.fields import andField, orField, propertyField
 
 
 class DateFilterCondition(BaseModel):
@@ -108,9 +107,9 @@ class RollupFilterCondition(BaseModel):
 class BaseFilter(BaseModel, extra=Extra.ignore):
     @root_validator(pre=True)
     def validate_values(cls, values):
-        pattern = re.compile(r'(?<!^)(?=[A-Z])')
-        field_name = pattern.sub('_', cls.__name__).lower().replace(
-            '_filter', ''
+        pattern = re.compile(r"(?<!^)(?=[A-Z])")
+        field_name = (
+            pattern.sub("_", cls.__name__).lower().replace("_filter", "")
         )
         values[field_name] = values
         return values
@@ -184,12 +183,7 @@ class LastEditedTimeFilter(TimestampFilter):
     last_edited_time: DateFilterCondition
 
 
-FilterItem = Union[
-    PropertyFilter,
-    TimestampFilter,
-    "AndFilter",
-    "OrFilter"
-]
+FilterItem = Union[PropertyFilter, TimestampFilter, "AndFilter", "OrFilter"]
 
 
 class AndFilter(BaseModel):
@@ -215,8 +209,10 @@ def or_filter(filters: List[FilterItem]):
 
     """
     if len(filters) > 100:
-        filters = [or_filter(filters[i:i + 100]) for i in
-                   range(0, len(filters) + 1, 100)]
+        filters = [
+            or_filter(filters[i : i + 100])
+            for i in range(0, len(filters) + 1, 100)
+        ]
     return OrFilter(**{"or": filters})
 
 
@@ -235,8 +231,10 @@ def and_filter(filters: List[FilterItem]):
 
     """
     if len(filters) > 100:
-        filters = [and_filter(filters[i:i + 100]) for i in
-                   range(0, len(filters) + 1, 100)]
+        filters = [
+            and_filter(filters[i : i + 100])
+            for i in range(0, len(filters) + 1, 100)
+        ]
     return AndFilter(**{"and": filters})
 
 

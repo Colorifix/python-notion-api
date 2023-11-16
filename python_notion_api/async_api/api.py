@@ -1,23 +1,15 @@
-from typing import Literal, Dict, Any, Optional, Type, Generator
-
-from math import floor
-
-import json
-import aiohttp
 import asyncio
+import json
+from math import floor
+from typing import Any, Dict, Generator, Literal, Optional, Type
 
+import aiohttp
 from loguru import logger
 
-
-from python_notion_api.models.objects import (
-    NotionObjectBase, User
-)
-
-from python_notion_api.models.properties import NotionObject
-
+from python_notion_api.async_api import NotionBlock, NotionDatabase, NotionPage
 from python_notion_api.async_api.retry_strategy import RetryStrategy
-from python_notion_api.async_api import NotionBlock, NotionPage, NotionDatabase
-
+from python_notion_api.models.objects import NotionObjectBase, User
+from python_notion_api.models.properties import NotionObject
 
 NotionObjectGenerator = Generator[NotionObject, None, None]
 
@@ -35,10 +27,7 @@ class AsyncNotionAPI:
     """
 
     def __init__(
-        self,
-        access_token: str,
-        api_version='2022-06-28',
-        page_limit=20
+        self, access_token: str, api_version="2022-06-28", page_limit=20
     ):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"
@@ -46,21 +35,21 @@ class AsyncNotionAPI:
         self._default_retry_strategy = RetryStrategy(
             total=3,
             backoff_factor=0.1,
-            status_forcelist=[429, 500, 502, 503, 504]
+            status_forcelist=[429, 500, 502, 503, 504],
         )
         self._page_limit = page_limit
 
     @property
     def request_headers(self):
         return {
-            'Authorization': f'Bearer {self._access_token}',
-            'Notion-Version': f'{self._api_version}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            "Authorization": f"Bearer {self._access_token}",
+            "Notion-Version": f"{self._api_version}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
         }
 
     async def get_database(self, database_id: str) -> NotionDatabase:
-        """ Wrapper for 'Retrieve a database' action.
+        """Wrapper for 'Retrieve a database' action.
 
         Args:
             database_id: Id of the database to fetch.
@@ -71,7 +60,7 @@ class AsyncNotionAPI:
         return database
 
     async def get_page(self, page_id, page_cast=NotionPage) -> NotionPage:
-        """ Wrapper for 'Retrieve a dpage' action.
+        """Wrapper for 'Retrieve a dpage' action.
 
         Args:
             page_id: Id of the database to fetch.
@@ -84,7 +73,7 @@ class AsyncNotionAPI:
         return page
 
     async def get_block(self, block_id) -> NotionBlock:
-        """ Wrapper for 'Retrieve a block' action.
+        """Wrapper for 'Retrieve a block' action.
 
         Args:
             block_id: Id of the block to fetch.
@@ -98,12 +87,12 @@ class AsyncNotionAPI:
         return await self._get("users/me")
 
     async def _request_attempt(
-            self,
-            session: aiohttp.ClientSession,
-            request_type: Literal['get', 'post', 'patch'],
-            url: str = '',
-            params: Dict[str, Any] = {},
-            data: Optional[str] = None,
+        self,
+        session: aiohttp.ClientSession,
+        request_type: Literal["get", "post", "patch"],
+        url: str = "",
+        params: Dict[str, Any] = {},
+        data: Optional[str] = None,
     ):
         """Attempt a request to url.
 
@@ -118,17 +107,18 @@ class AsyncNotionAPI:
             url=url,
             headers=self.request_headers,
             params=params,
-            data=data
+            data=data,
         )
 
     async def _request(
-            self, request_type: Literal['get', 'post', 'patch'],
-            endpoint: str = '',
-            params: Dict[str, Any] = {},
-            data: Optional[str] = None,
-            cast_cls: Type[NotionObjectBase] = NotionObject,
-            retry_strategy: Optional[RetryStrategy] = None
-            ) -> Optional[NotionObject]:
+        self,
+        request_type: Literal["get", "post", "patch"],
+        endpoint: str = "",
+        params: Dict[str, Any] = {},
+        data: Optional[str] = None,
+        cast_cls: Type[NotionObjectBase] = NotionObject,
+        retry_strategy: Optional[RetryStrategy] = None,
+    ) -> Optional[NotionObject]:
         """Main request handler.
 
         Should not be called directly, for internal use only.
@@ -158,7 +148,7 @@ class AsyncNotionAPI:
                     session=session,
                     url=url,
                     params=params,
-                    data=data
+                    data=data,
                 )
 
                 response_data = await response.read()
@@ -172,11 +162,11 @@ class AsyncNotionAPI:
                         f"Request to {url} failed:"
                         f"\n{response.status}\n{decoded_data}"
                     )
-                    raise Exception('Request failed')
+                    raise Exception("Request failed")
 
                 delay = min(
                     retry_strategy.backoff_factor * (2 ** (i)),
-                    retry_strategy.max_backoff
+                    retry_strategy.max_backoff,
                 )
 
                 logger.error(
@@ -186,18 +176,17 @@ class AsyncNotionAPI:
                 await asyncio.sleep(delay)
 
         logger.warning(
-            f"Request failed after {retry_strategy.total}"
-            " attempts."
+            f"Request failed after {retry_strategy.total}" " attempts."
         )
-        raise MaxRetryError('Request failed')
+        raise MaxRetryError("Request failed")
 
     async def _post(
         self,
         endpoint: str,
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
-        retry_strategy: Any = None
-      ) -> Optional[NotionObject]:
+        retry_strategy: Any = None,
+    ) -> Optional[NotionObject]:
         """Wrapper for post requests.
 
         Should not be called directly, for internal use only.
@@ -210,18 +199,18 @@ class AsyncNotionAPI:
                 request to.
         """
         return await self._request(
-            request_type='post',
+            request_type="post",
             endpoint=endpoint,
             data=data,
             cast_cls=cast_cls,
-            retry_strategy=retry_strategy
+            retry_strategy=retry_strategy,
         )
 
     async def _get(
         self,
         endpoint: str,
         params: Dict[str, str] = {},
-        cast_cls: Type[NotionObjectBase] = NotionObject
+        cast_cls: Type[NotionObjectBase] = NotionObject,
     ) -> Optional[NotionObject]:
         """Wrapper for post requests.
 
@@ -235,7 +224,7 @@ class AsyncNotionAPI:
                 request to.
         """
         return await self._request(
-            request_type='get',
+            request_type="get",
             endpoint=endpoint,
             params=params,
             cast_cls=cast_cls,
@@ -246,7 +235,7 @@ class AsyncNotionAPI:
         endpoint: str,
         params: Dict[str, str] = {},
         data: Optional[str] = None,
-        cast_cls=NotionObject
+        cast_cls=NotionObject,
     ) -> NotionObject:
         """Wrapper for patch requests.
 
@@ -261,17 +250,15 @@ class AsyncNotionAPI:
                 request to.
         """
         return await self._request(
-            request_type='patch',
+            request_type="patch",
             endpoint=endpoint,
             params=params,
             data=data,
-            cast_cls=cast_cls
+            cast_cls=cast_cls,
         )
 
     async def _post_iterate(
-        self, endpoint: str,
-        data: Dict[str, str] = {},
-        page_limit: int = None
+        self, endpoint: str, data: Dict[str, str] = {}, page_limit: int = None
     ) -> NotionObjectGenerator:
         """Wrapper for post requests where expected return type is Pagination.
 
@@ -287,19 +274,15 @@ class AsyncNotionAPI:
         page_size = page_limit or self._page_limit
 
         while has_more:
-            data.update({
-                'start_cursor': cursor,
-                'page_size': page_size
-            })
+            data.update({"start_cursor": cursor, "page_size": page_size})
 
             if cursor is None:
-                data.pop('start_cursor')
+                data.pop("start_cursor")
 
             while page_size > 0:
                 try:
                     response = await self._post(
-                        endpoint=endpoint,
-                        data=json.dumps(data)
+                        endpoint=endpoint, data=json.dumps(data)
                     )
 
                     for item in response.results:
@@ -310,21 +293,19 @@ class AsyncNotionAPI:
 
                     break
                 except MaxRetryError as e:
-                    page_size = floor(page_size/2)
+                    page_size = floor(page_size / 2)
                     logger.warning(
                         f"Retrying request with smaller page size({page_size})"
                     )
                     if page_size == 0:
                         raise e
-                    data.update({
-                        'page_size': page_size
-                    })
+                    data.update({"page_size": page_size})
 
     async def _get_iterate(
         self,
         endpoint: str,
         params: Dict[str, str] = {},
-        page_limit: int = None
+        page_limit: int = None,
     ) -> NotionObjectGenerator:
         """Wrapper for get requests where expected return type is Pagination.
 
@@ -340,22 +321,18 @@ class AsyncNotionAPI:
         page_size = page_limit or self._page_limit
 
         while has_more:
-            params.update({
-                'start_cursor': cursor,
-                'page_size': page_size
-            })
+            params.update({"start_cursor": cursor, "page_size": page_size})
 
             if cursor is None:
-                params.pop('start_cursor')
+                params.pop("start_cursor")
 
             while page_size > 0:
                 try:
                     response = await self._get(
-                        endpoint=endpoint,
-                        params=params
+                        endpoint=endpoint, params=params
                     )
 
-                    if hasattr(response, 'property_item'):
+                    if hasattr(response, "property_item"):
                         # Required for rollups
                         property_item = response.property_item
                     else:
@@ -370,12 +347,10 @@ class AsyncNotionAPI:
 
                     break
                 except MaxRetryError as e:
-                    page_size = floor(page_size/2)
+                    page_size = floor(page_size / 2)
                     logger.warning(
                         f"Retrying request with smaller page size({page_size})"
                     )
                     if page_size == 0:
                         raise e
-                    params.update({
-                        'page_size': page_size
-                    })
+                    params.update({"page_size": page_size})

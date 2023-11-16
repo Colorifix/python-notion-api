@@ -1,24 +1,18 @@
 from typing import Any, Dict, Generator, List, Optional
 
-from python_notion_api.models.common import (
-    FileObject,
-    ParentObject
-)
-from python_notion_api.models.configurations import (
-    NotionPropertyConfiguration, RelationPropertyConfiguration)
-from python_notion_api.models.filters import FilterItem
-from python_notion_api.models.iterators import PropertyItemIterator
-
-from python_notion_api.models.objects import Database
-
-from python_notion_api.models.properties import PropertyItem
-from python_notion_api.models.sorts import Sort
-from python_notion_api.models.values import PropertyValue, generate_value
 from pydantic import BaseModel
 
 from python_notion_api.async_api import NotionPage
-
 from python_notion_api.async_api.utils import ensure_loaded
+from python_notion_api.models.common import FileObject, ParentObject
+from python_notion_api.models.configurations import (
+    NotionPropertyConfiguration,
+    RelationPropertyConfiguration,
+)
+from python_notion_api.models.filters import FilterItem
+from python_notion_api.models.objects import Database
+from python_notion_api.models.sorts import Sort
+from python_notion_api.models.values import PropertyValue, generate_value
 
 
 class NotionDatabase:
@@ -51,8 +45,7 @@ class NotionDatabase:
 
     async def reload(self):
         self._object = await self._api._get(
-            endpoint=f'databases/{self._database_id}',
-            cast_cls=Database
+            endpoint=f"databases/{self._database_id}", cast_cls=Database
         )
 
         if self._object is None:
@@ -62,16 +55,14 @@ class NotionDatabase:
             key: NotionPropertyConfiguration.from_obj(val)
             for key, val in self._object.properties.items()
         }
-        self._title = "".join(
-            rt.plain_text for rt in self._object.title
-        )
+        self._title = "".join(rt.plain_text for rt in self._object.title)
 
     async def query(
         self,
         filters: Optional[FilterItem] = None,
         sorts: Optional[List[Sort]] = None,
         page_limit: Optional[int] = None,
-        cast_cls=NotionPage
+        cast_cls=NotionPage,
     ) -> Generator[NotionPage, None, None]:
         """A wrapper for 'Query a database' action.
 
@@ -86,43 +77,33 @@ class NotionDatabase:
         """
         data = {}
         if filters is not None:
-            filters = filters.dict(
-                by_alias=True,
-                exclude_unset=True
-            )
-            data['filter'] = filters
+            filters = filters.dict(by_alias=True, exclude_unset=True)
+            data["filter"] = filters
 
         if sorts is not None:
-            data['sorts'] = [
-                sort.dict(
-                    by_alias=True,
-                    exclude_unset=True
-                )
-                for sort in sorts
+            data["sorts"] = [
+                sort.dict(by_alias=True, exclude_unset=True) for sort in sorts
             ]
 
         async for item in self._api._post_iterate(
-            endpoint=f'databases/{self._database_id}/query',
+            endpoint=f"databases/{self._database_id}/query",
             data=data,
-            page_limit=page_limit
+            page_limit=page_limit,
         ):
             yield cast_cls(
-                api=self._api, database=self, page_id=item.page_id,
-                obj=item
+                api=self._api, database=self, page_id=item.page_id, obj=item
             )
 
     @property
     @ensure_loaded
     def title(self) -> str:
-        """Returns a title of the database.
-        """
+        """Returns a title of the database."""
         return self._title
 
     @property
     @ensure_loaded
     def properties(self) -> Dict[str, NotionPropertyConfiguration]:
-        """Returns all property configurations of the database.
-        """
+        """Returns all property configurations of the database."""
         return self._properties
 
     @property
@@ -132,7 +113,8 @@ class NotionDatabase:
         relations.
         """
         return {
-            key: val for key, val in self._properties.items()
+            key: val
+            for key, val in self._properties.items()
             if isinstance(val, RelationPropertyConfiguration)
         }
 
@@ -163,29 +145,23 @@ class NotionDatabase:
 
         request = NotionDatabase.CreatePageRequest(
             parent=ParentObject(
-                type="database_id",
-                database_id=self.database_id
+                type="database_id", database_id=self.database_id
             ),
             properties=validated_properties,
             cover=(
                 FileObject.from_url(cover_url)
-                if cover_url is not None else None
-            )
+                if cover_url is not None
+                else None
+            ),
         )
 
-        data = request.json(
-            by_alias=True,
-            exclude_unset=True
-        )
+        data = request.json(by_alias=True, exclude_unset=True)
 
-        new_page = await self._api._post(
-            "pages",
-            data=data
-        )
+        new_page = await self._api._post("pages", data=data)
 
         return NotionPage(
             api=self._api,
             page_id=new_page.page_id,
             obj=new_page,
-            database=self
+            database=self,
         )

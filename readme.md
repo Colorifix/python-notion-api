@@ -133,7 +133,7 @@ E.g.
 database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
 
 database.create_page(properties={
-    'Value': 234, 
+    'Value': 234,
     'Select_property': 'select1',
     'Checkbox_property': True,
     'Relation_property': ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx']
@@ -193,10 +193,10 @@ for block in blocks:
 ```
 
 ### Custom page properties
-In some cases, we may not want the values directly returned by the API. 
-In particular, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.  
+In some cases, we may not want the values directly returned by the API.
+In particular, the values of rollups and formulas may be incorrect when retrieved through the API, but we can calculate the correct value by recreating the formulas and rollups in Python code.
 
-To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyValue`) and define the mapping from Notion property names to the function names. 
+To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyValue`) and define the mapping from Notion property names to the function names.
 
 ```python
 from python_notion_api.api import NotionPage
@@ -209,14 +209,14 @@ class MyPage(NotionPage):
     special_properties = {
         'Value': 'special_value'
     }
-    
-    
+
+
     def special_value(self) -> RichTextPropertyItem:
-    
-        # self.get('Value') would just loop back here, 
+
+        # self.get('Value') would just loop back here,
         # so use self._direct_get to retrieve the value returned by the API
         x = self._direct_get('Value').value
-        
+
         # Then do whatever processing is required
         # Should return a PropertyValue to be compatible with downstream functions
         if x == 1:
@@ -225,25 +225,25 @@ class MyPage(NotionPage):
         else:
             return RichTextPropertyValue(rich_text=RichTextObject(
                 plain_text='Number unknown', type='text'))
-                
+
 ```
 
-This page class can be passed when querying a database or getting a page. 
+This page class can be passed when querying a database or getting a page.
 
-```python 
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 
-                    cast_cls=MyPage)     
-                       
+```python
+page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    cast_cls=MyPage)
+
 
 for page in database.query(cast_cls=MyPage, filters=NumberFilter(property='Value', equals=1)):
     print('Custom processing:', page.get('Value').value)
     print('Raw value:', page._direct_get('Value').value)
     break
-    
+
 ## output
 # Custom processing: One
 # Raw value: 1.0
-       
+
 ```
 
 ## Blocks
@@ -268,7 +268,7 @@ child_blocks = block.get_child_blocks()
 
 ### Update a block
 
-All values must be updated at once. 
+All values must be updated at once.
 
 ```python
 from python_notion_api.models.blocks import ParagraphBlock, ParagraphBlockValue, RichTextObject
@@ -277,8 +277,8 @@ from python_notion_api.models.blocks import ParagraphBlock, ParagraphBlockValue,
 new_block = ParagraphBlock.from_obj({'object': 'block',
  'type': 'paragraph',
  'paragraph': {'rich_text': [
-     {'plain_text': 'Text here not used for some reason', 'type': 'text', 
-     'text': {'content': 'This is the text that will be added', 'link': None}}]}  
+     {'plain_text': 'Text here not used for some reason', 'type': 'text',
+     'text': {'content': 'This is the text that will be added', 'link': None}}]}
 })
 
 block = api.get_block(block_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
@@ -286,16 +286,16 @@ block.set(new_block)
 ```
 
 ## Problems with rollups and formulas
-These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect. 
-There is no error or warning when this occurs, so be careful!  
+These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect.
+There is no error or warning when this occurs, so be careful!
 
-A subclass of NotionPage can be used to fully recreate rollups and formulas (see above).  
+A subclass of NotionPage can be used to fully recreate rollups and formulas (see above).
 
 ## File upload
-The official Notion API doesn't yet support uploading files. As an alternative, it is possible to upload files to GDrive and use the 
+The official Notion API doesn't yet support uploading files. As an alternative, it is possible to upload files to GDrive and use the
 link in a column of type File.
 
-To configure it, set the env variable `CLIENT_CONFIG_FILE` to the location of a json configuration file with the OAuth config file and the env variable `CREDENTIAlS` to the location of a json configuration file with the OAuth credentials. 
+To configure it, set the env variable `CLIENT_CONFIG_FILE` to the location of a json configuration file with the OAuth config file and the env variable `CREDENTIAlS` to the location of a json configuration file with the OAuth credentials.
 
 To run the tests, set the env variable `PARENT_ID` to the folder id of where to run the tests.
 
