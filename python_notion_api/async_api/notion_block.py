@@ -1,16 +1,10 @@
-import json
+from typing import List
 
 from pydantic import BaseModel
 
-from typing import List
-
 from python_notion_api.async_api import AsyncBlockIterator
-
-from python_notion_api.models.objects import (
-    Block
-)
-
 from python_notion_api.async_api.utils import ensure_loaded
+from python_notion_api.models.objects import Block
 
 
 class NotionBlock:
@@ -20,15 +14,14 @@ class NotionBlock:
         api: Instance of the NotionAPI.
         block_id: Id of the block.
     """
+
     def __init__(self, api, block_id):
         self._api = api
         self._block_id = block_id
         self._object = None
 
     async def reload(self):
-        self._object = await self._api._get(
-            endpoint=f'blocks/{self.block_id}'
-        )
+        self._object = await self._api._get(endpoint=f"blocks/{self.block_id}")
 
     class AddChildrenRequest(BaseModel):
         children: List[Block]
@@ -48,14 +41,12 @@ class NotionBlock:
 
         """
         generator = await self._api._get_iterate(
-            endpoint=f'blocks/{self._block_id}/children'
+            endpoint=f"blocks/{self._block_id}/children"
         )
         return AsyncBlockIterator(generator)
 
     async def add_child_block(
-        self,
-        content: List[Block],
-        reload_block: bool = False
+        self, content: List[Block], reload_block: bool = False
     ) -> AsyncBlockIterator:
         """Wrapper for add new blocks to an existing page.
 
@@ -63,19 +54,14 @@ class NotionBlock:
             content: Content of the new block.
         """
 
-        request = NotionBlock.AddChildrenRequest(
-            children=content
-        )
+        request = NotionBlock.AddChildrenRequest(children=content)
 
         data = request.json(
-            by_alias=True,
-            exclude_unset=True,
-            exclude_none=True
+            by_alias=True, exclude_unset=True, exclude_none=True
         )
 
         new_blocks = await self._api._patch(
-            endpoint=f'blocks/{self.block_id}/children',
-            data=data
+            endpoint=f"blocks/{self.block_id}/children", data=data
         )
 
         if reload_block:
@@ -90,15 +76,10 @@ class NotionBlock:
             block: Block with the new values.
         """
 
-        data = block.json(
-            by_alias=True,
-            exclude_unset=True,
-            exclude_none=True
-        )
+        data = block.patch_json()
 
         new_block = await self._api._patch(
-            endpoint=f'blocks/{self.block_id}',
-            data=data
+            endpoint=f"blocks/{self.block_id}", data=data
         )
 
         if reload_block:

@@ -1,11 +1,16 @@
 from __future__ import annotations
-from typing import List, Optional, Union, Dict
-from pydantic import BaseModel, AnyUrl
+
+from typing import List, Optional, Union
+
+from pydantic import AnyUrl, BaseModel
+
 from python_notion_api.models.common import (
-    RichTextObject, FileObject, EmojiObject
+    EmojiObject,
+    FileObject,
+    RichTextObject,
 )
-from python_notion_api.models.objects import Block
 from python_notion_api.models.fields import typeField
+from python_notion_api.models.objects import Block
 
 
 class RCCBlockValue(BaseModel):
@@ -150,6 +155,11 @@ class ParagraphBlock(Block):
     _class_key_field = None
 
     paragraph: ParagraphBlockValue
+
+    @classmethod
+    def from_str(cls, value: str):
+        rich_text = RichTextObject.from_str(value)
+        return cls(paragraph={"rich_text": [rich_text]})
 
 
 class Heading1Block(Block):

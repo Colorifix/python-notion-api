@@ -62,5 +62,3 @@ All notable changes to this project will be documented in this file.
 - Rollup iterators, rollup filter and rollup values
 - Query logic
 - Change misleading message when a property doesn't exist
-
-

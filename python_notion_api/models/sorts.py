@@ -12,7 +12,7 @@ class Sort(BaseModel):
 
     @root_validator(pre=True)
     def validate_values(cls, values):
-        values['direction'] = (
-            "descending" if 'descending' in values else "ascending"
+        values["direction"] = (
+            "descending" if "descending" in values else "ascending"
         )
         return values

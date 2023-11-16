@@ -1,164 +1,151 @@
-from python_notion_api.models.fields import (
-    typeField,
-    idField,
-    objectField,
-    formatField,
-    propertyField,
-    filterField,
-    andField,
-    orField
+from python_notion_api.models.blocks import (
+    BookmarkBlock,
+    BreadcrumbBlock,
+    BulletedListItemBlock,
+    CalloutBlock,
+    ChildDatabaseBlock,
+    ChildPageBlock,
+    CodeBlock,
+    ColumnBlock,
+    ColumnListBlock,
+    DividerBlock,
+    EmbedBlock,
+    EquationBlock,
+    FileBlock,
+    Heading1Block,
+    Heading2Block,
+    Heading3Block,
+    ImageBlock,
+    LinkPreviewBlock,
+    LinkToPageBlock,
+    NumberedListItemBlock,
+    ParagraphBlock,
+    PDFBlock,
+    QuoteBlock,
+    SyncedBlock,
+    TableBlock,
+    TableOfContentsBlock,
+    TableRowBlock,
+    TemplateBlock,
+    ToDoBlock,
+    UnsupportedBlock,
+    VideoBlock,
 )
-
 from python_notion_api.models.common import (
-    TextObject,
-    RichTextObject,
-    File,
-    ExternalFile,
-    NotionFile,
-    FileObject,
+    DateObject,
     EmojiObject,
+    ExternalFile,
+    File,
+    FileObject,
+    NotionFile,
     ParentObject,
+    RelationObject,
+    RichTextObject,
     SelectObject,
     StatusObject,
-    DateObject,
-    RelationObject,
-    UniqueIDObject
+    TextObject,
+    UniqueIDObject,
 )
-
-from python_notion_api.models.values import (
-    FormulaPropertyValue,
-    RollupPropertyValue,
-    PropertyValue
-)
-
-from python_notion_api.models.objects import (
-    NotionObjectBase,
-    NotionObject,
-    User,
-    Pagination,
-    Database,
-    Page,
-    Block
-)
-
-
-from python_notion_api.models.properties import (
-    PropertyItem,
-    TitlePropertyItem,
-    RichTextPropertyItem,
-    NumberPropertyItem,
-    SelectPropertyItem,
-    StatusPropertyItem,
-    MultiSelectPropertyItem,
-    DatePropertyItem,
-    FormulaPropertyItem,
-    RelationPropertyItem,
-    PeoplePropertyItem,
-    FilesPropertyItem,
-    CheckBoxPropertyItem,
-    URLPropertyItem,
-    EmailPropertyItem,
-    PhoneNumberPropertyItem,
-    CreatedTimePropertyItem,
-    CreatedByPropertyItem,
-    LastEditedTimePropertyItem,
-    LastEditedByPropertyItem,
-    RollupPropertyItem,
-    UniqueIDPropertyItem
-)
-
-from python_notion_api.models.paginations import (
-    PagePagination,
-    PropertyItemPagination
-)
-
 from python_notion_api.models.configurations import (
-    NotionPropertyConfiguration,
-    TitlePropertyConfiguration,
-    TextPropertyConfiguration,
-    NumberPropertyConfiguration,
-    SelectPropertyConfiguration,
-    StatusPropertyConfiguration,
-    MultiSelectPropertyConfiguration,
-    DatePropertyConfiguration,
-    PeoplePropertyConfiguration,
-    FilesPropertyConfiguration,
     CheckBoxPropertyConfiguration,
-    URLPropertyConfiguration,
+    CreatedByPropertyConfiguration,
+    CreatedTimePropertyConfiguration,
+    DatePropertyConfiguration,
     EmailPropertyConfiguration,
-    PhoneNumberPropertyConfiguration,
+    FilesPropertyConfiguration,
     FormulaConfigurationObject,
     FormulaPropertyConfiguration,
+    LastEditedByPropertyConfiguration,
+    LastEditedTimePropertyConfiguration,
+    MultiSelectPropertyConfiguration,
+    NotionPropertyConfiguration,
+    NumberPropertyConfiguration,
+    PeoplePropertyConfiguration,
+    PhoneNumberPropertyConfiguration,
     RelationConfigurationObject,
     RelationPropertyConfiguration,
     RollupConfigurationObject,
     RollupPropertyConfiguration,
-    CreatedTimePropertyConfiguration,
-    CreatedByPropertyConfiguration,
-    LastEditedTimePropertyConfiguration,
-    LastEditedByPropertyConfiguration
+    SelectPropertyConfiguration,
+    StatusPropertyConfiguration,
+    TextPropertyConfiguration,
+    TitlePropertyConfiguration,
+    URLPropertyConfiguration,
 )
-
-from python_notion_api.models.iterators import (
-    PropertyItemIterator
+from python_notion_api.models.fields import (
+    andField,
+    filterField,
+    formatField,
+    idField,
+    objectField,
+    orField,
+    propertyField,
+    typeField,
 )
-
 from python_notion_api.models.filters import (
-    RichTextFilter,
-    PhoneNumberFilter,
-    NumberFilter,
-    SelectFilter,
-    MultiSelectFilter,
-    DateFilter,
-    PeopleFilter,
-    FilesFilter,
-    RelationFilter,
-    FormulaFilter,
-    CreatedTimeFilter,
-    LastEditedTimeFilter,
-    CheckboxFilter,
-    FilterItem,
-    StatusFilter,
     AndFilter,
+    CheckboxFilter,
+    CreatedTimeFilter,
+    DateFilter,
+    FilesFilter,
+    FilterItem,
+    FormulaFilter,
+    LastEditedTimeFilter,
+    MultiSelectFilter,
+    NumberFilter,
     OrFilter,
+    PeopleFilter,
+    PhoneNumberFilter,
+    RelationFilter,
+    RichTextFilter,
+    SelectFilter,
+    StatusFilter,
+    and_filter,
     or_filter,
-    and_filter
 )
-
+from python_notion_api.models.iterators import PropertyItemIterator
+from python_notion_api.models.objects import (
+    Block,
+    Database,
+    NotionObject,
+    NotionObjectBase,
+    Page,
+    Pagination,
+    User,
+)
+from python_notion_api.models.paginations import (
+    PagePagination,
+    PropertyItemPagination,
+)
+from python_notion_api.models.properties import (
+    CheckBoxPropertyItem,
+    CreatedByPropertyItem,
+    CreatedTimePropertyItem,
+    DatePropertyItem,
+    EmailPropertyItem,
+    FilesPropertyItem,
+    FormulaPropertyItem,
+    LastEditedByPropertyItem,
+    LastEditedTimePropertyItem,
+    MultiSelectPropertyItem,
+    NumberPropertyItem,
+    PeoplePropertyItem,
+    PhoneNumberPropertyItem,
+    PropertyItem,
+    RelationPropertyItem,
+    RichTextPropertyItem,
+    RollupPropertyItem,
+    SelectPropertyItem,
+    StatusPropertyItem,
+    TitlePropertyItem,
+    UniqueIDPropertyItem,
+    URLPropertyItem,
+)
 from python_notion_api.models.sorts import Sort
-
-from python_notion_api.models.blocks import (
-    ParagraphBlock,
-    Heading1Block,
-    Heading2Block,
-    Heading3Block,
-    CalloutBlock,
-    QuoteBlock,
-    BulletedListItemBlock,
-    NumberedListItemBlock,
-    ToDoBlock,
-    CodeBlock,
-    ChildPageBlock,
-    ChildDatabaseBlock,
-    EmbedBlock,
-    ImageBlock,
-    VideoBlock,
-    FileBlock,
-    PDFBlock,
-    BookmarkBlock,
-    EquationBlock,
-    DividerBlock,
-    TableOfContentsBlock,
-    BreadcrumbBlock,
-    ColumnListBlock,
-    ColumnBlock,
-    LinkPreviewBlock,
-    TemplateBlock,
-    LinkToPageBlock,
-    SyncedBlock,
-    TableBlock,
-    TableRowBlock,
-    UnsupportedBlock
+from python_notion_api.models.values import (
+    FormulaPropertyValue,
+    PropertyValue,
+    RollupPropertyValue,
 )
 
 __all__ = [
@@ -170,7 +157,6 @@ __all__ = [
     "filterField",
     "andField",
     "orField",
-
     "TextObject",
     "RichTextObject",
     "File",
@@ -184,11 +170,9 @@ __all__ = [
     "DateObject",
     "RelationObject",
     "UniqueIDObject",
-
     "FormulaPropertyValue",
     "RollupPropertyValue",
     "PropertyValue",
-
     "NotionObjectBase",
     "NotionObject",
     "User",
@@ -196,7 +180,6 @@ __all__ = [
     "Database",
     "Page",
     "Block",
-
     "PropertyItem",
     "TitlePropertyItem",
     "RichTextPropertyItem",
@@ -219,10 +202,8 @@ __all__ = [
     "LastEditedTimePropertyItem",
     "LastEditedByPropertyItem",
     "UniqueIDPropertyItem",
-
     "PagePagination",
     "PropertyItemPagination",
-
     "NotionPropertyConfiguration",
     "TitlePropertyConfiguration",
     "TextPropertyConfiguration",
@@ -247,9 +228,7 @@ __all__ = [
     "CreatedByPropertyConfiguration",
     "LastEditedTimePropertyConfiguration",
     "LastEditedByPropertyConfiguration",
-
     "PropertyItemIterator",
-
     "RichTextFilter",
     "PhoneNumberFilter",
     "NumberFilter",
@@ -269,9 +248,7 @@ __all__ = [
     "OrFilter",
     "or_filter",
     "and_filter",
-
     "Sort",
-
     "ParagraphBlock",
     "Heading1Block",
     "Heading2Block",
@@ -302,5 +279,5 @@ __all__ = [
     "SyncedBlock",
     "TableBlock",
     "TableRowBlock",
-    "UnsupportedBlock"
+    "UnsupportedBlock",
 ]

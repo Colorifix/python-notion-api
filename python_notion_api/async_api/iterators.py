@@ -1,9 +1,9 @@
 from typing import Generator
-from python_notion_api.models.common import DateObject
 
+from python_notion_api.models.blocks import Block
+from python_notion_api.models.common import DateObject
 from python_notion_api.models.properties import PropertyItem
 from python_notion_api.utils import get_derived_class
-from python_notion_api.models.blocks import Block
 
 PropertyItemGenerator = Generator[PropertyItem, None, None]
 
@@ -29,15 +29,14 @@ class AsyncPropertyItemIterator:
 
     async def _get_value(self):
         prop_cls = get_derived_class(
-            PropertyItem,
-            PropertyItem._class_map.get(self.property_type)
+            PropertyItem, PropertyItem._class_map.get(self.property_type)
         )
         return prop_cls(
             id=self.property_id,
             init=[
                 getattr(item, self.property_type)
                 async for item, _ in self.generator
-            ]
+            ],
         ).value
 
 
@@ -59,11 +58,8 @@ class AsyncRollupPropertyItemIterator(AsyncPropertyItemIterator):
             return [
                 get_derived_class(
                     PropertyItem,
-                    PropertyItem._class_map.get(item.property_type)
-                )(
-                    id=self.property_id,
-                    init=getattr(item, item.property_type)
-                )
+                    PropertyItem._class_map.get(item.property_type),
+                )(id=self.property_id, init=getattr(item, item.property_type))
                 for item in items
             ]
         elif prop_type == "number":
@@ -80,13 +76,10 @@ class AsyncRollupPropertyItemIterator(AsyncPropertyItemIterator):
 
 
 def create_property_iterator(
-    generator,
-    property_item
+    generator, property_item
 ) -> AsyncPropertyItemIterator:
     if property_item.property_type == "rollup":
-        return AsyncRollupPropertyItemIterator(
-            generator, property_item
-        )
+        return AsyncRollupPropertyItemIterator(generator, property_item)
     else:
         return AsyncPropertyItemIterator(generator, property_item)
 

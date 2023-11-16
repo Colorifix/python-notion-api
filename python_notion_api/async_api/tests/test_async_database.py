@@ -1,103 +1,63 @@
-import os
-import unittest
 import random
 
-from python_notion_api.async_api import (
-    AsyncNotionAPI,
-    NotionPage,
-    NotionDatabase
-)
+from pytest import mark
+from pytest_asyncio import fixture as async_fixture
+
+from python_notion_api.async_api import NotionDatabase, NotionPage
 
 TEST_DATABASE_ID = "401076f6c7c04ae796bf3e4c847361e1"
 
 
-class TestAsyncDatabase(unittest.IsolatedAsyncioTestCase):
-    def get_api(self):
-        return AsyncNotionAPI(access_token=os.environ["NOTION_TOKEN"])
-
-    async def get_database(self):
-        api = self.get_api()
-        database = NotionDatabase(database_id=TEST_DATABASE_ID, api=api)
+@mark.asyncio
+class TestAsyncDatabase:
+    @async_fixture
+    async def database(self, async_api):
+        database = NotionDatabase(database_id=TEST_DATABASE_ID, api=async_api)
         await database.reload()
-
         return database
 
-    async def test_load_database(self):
-        database = await self.get_database()
+    async def test_load_database(self, database):
+        assert database is not None
+        assert database._object is not None
+        assert database.title is not None
+        assert database.properties is not None
+        assert database.relations is not None
 
-        self.assertIsNotNone(database)
+    async def test_create_database_page(self, database):
+        new_page = await database.create_page(properties={})
+        assert isinstance(new_page, NotionPage)
+        assert new_page._object is not None
 
-        self.assertIsNotNone(database._object)
-
-        self.assertIsNotNone(database.title)
-        self.assertIsNotNone(database.properties)
-        self.assertIsNotNone(database.relations)
-
-    async def test_create_database_page(self):
-        database = await self.get_database()
-
-        new_page = await database.create_page(
-            properties={}
-        )
-
-        self.assertIsInstance(new_page, NotionPage)
-        self.assertIsNotNone(new_page._object)
-
-    async def test_create_database_page_with_properties(self):
-        database = await self.get_database()
-
+    async def test_create_database_page_with_properties(self, database):
         properties = {
-            "Text": "".join([random.choice('abcd') for _ in range(10)]),
-            "Number": int(
-                "".join([random.choice('1234') for _ in range(3)])
-            )
+            "Text": "".join([random.choice("abcd") for _ in range(10)]),
+            "Number": int("".join([random.choice("1234") for _ in range(3)])),
         }
+        new_page = await database.create_page(properties=properties)
 
-        new_page = await database.create_page(
-            properties=properties
-        )
+        assert await new_page.get("Text") == properties["Text"]
+        assert await new_page.get("Number") == properties["Number"]
 
-        self.assertEqual(await new_page.get('Text'), properties['Text'])
-        self.assertEqual(await new_page.get('Number'), properties['Number'])
-
-    async def test_query_database(self):
-        database = await self.get_database()
+    async def test_query_database(self, database):
         pages = database.query()
-
         page = await anext(pages)
-        self.assertIsInstance(page, NotionPage)
+        assert isinstance(page, NotionPage)
 
-    async def test_get_object_property(self):
-        database = await self.get_database()
-
+    async def test_get_object_property(self, database):
         created_time = database.created_time
+        assert created_time is not None
 
-        self.assertIsNotNone(created_time)
-
-    async def test_get_title(self):
-        database = await self.get_database()
-
+    async def test_get_title(self, database):
         title = database.title
+        assert title is not None
 
-        self.assertIsNotNone(title)
-
-    async def test_get_properties(self):
-        database = await self.get_database()
-
+    async def test_get_properties(self, database):
         properties = database.properties
+        assert isinstance(properties, dict)
 
-        self.assertIsInstance(properties, dict)
-
-    async def test_get_relations(self):
-        database = await self.get_database()
-
+    async def test_get_relations(self, database):
         relations = database.relations
-
-        self.assertIsInstance(relations, dict)
+        assert isinstance(relations, dict)
 
         for _, relation in relations.items():
-            self.assertEqual(relation.config_type, 'relation')
-
-
-if __name__ == "__main__":
-    unittest.main()
+            assert relation.config_type == "relation"

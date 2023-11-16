@@ -1,19 +1,16 @@
-from pydantic import BaseModel, Field, Extra, root_validator, ValidationError
-from typing import Literal, Optional, Dict, List, Union, ClassVar, Type
-
+import json
 from datetime import datetime
+from typing import ClassVar, Dict, List, Literal, Optional, Union
 
-from python_notion_api.models.fields import (
-    idField, typeField, objectField
-)
+from pydantic import BaseModel, Extra, Field, ValidationError, root_validator
 
 from python_notion_api.models.common import (
-    RichTextObject,
     EmojiObject,
     FileObject,
-    ParentObject
+    ParentObject,
+    RichTextObject,
 )
-
+from python_notion_api.models.fields import idField, objectField, typeField
 from python_notion_api.utils import get_derived_class
 
 
@@ -25,9 +22,7 @@ class NotionObjectBase(BaseModel):
         try:
             temp_obj = cls(**obj)
         except Exception as e:
-            raise Exception(
-                f"Failed to create {cls} object from {obj}"
-            ) from e
+            raise Exception(f"Failed to create {cls} object from {obj}") from e
 
         class_key_value = temp_obj._class_key_field
         if class_key_value is None:
@@ -61,7 +56,7 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
         "database": "Database",
         "page": "Page",
         "user": "User",
-        "block": "Block"
+        "block": "Block",
     }
 
     @property
@@ -79,23 +74,17 @@ class User(NotionObject):
     person: Optional[Dict]
     person_email: Optional[str] = Field(alias="person.email")
     bot: Optional[Dict]
-    owner_type: Optional[
-        Literal["workspace", "user"]
-    ] = Field(alias="owner.type")
+    owner_type: Optional[Literal["workspace", "user"]] = Field(
+        alias="owner.type"
+    )
 
     @classmethod
     def from_id(cls, id: str):
-        return cls(
-            object="user",
-            id=id
-        )
+        return cls(object="user", id=id)
 
     @classmethod
     def from_name(cls, name: str):
-        return cls(
-            object="user",
-            name=name
-        )
+        return cls(object="user", name=name)
 
 
 class Pagination(NotionObject):
@@ -103,8 +92,12 @@ class Pagination(NotionObject):
     next_cursor: Optional[str]
     results: List
     pagination_type: Literal[
-        "block", "page", "user", "database", "property_item",
-        "page_or_database"
+        "block",
+        "page",
+        "user",
+        "database",
+        "property_item",
+        "page_or_database",
     ] = typeField
 
     _class_map = {
@@ -131,8 +124,7 @@ class Database(NotionObject):
     title: List[RichTextObject]
     description: List[RichTextObject]
     icon: Optional[Union[FileObject, EmojiObject]]
-    cover: Optional[Union[FileObject,
-                          Dict[str, Union[str, FileObject]]]]
+    cover: Optional[Union[FileObject, Dict[str, Union[str, FileObject]]]]
     properties: Dict
     parent: Dict
     url: str
@@ -149,20 +141,45 @@ class Page(NotionObject):
     created_by: User
     last_edited_time: datetime
     last_edited_by: User
-    cover: Optional[Union[FileObject,
-                          Dict[str, Union[str, FileObject]]]]
+    cover: Optional[Union[FileObject, Dict[str, Union[str, FileObject]]]]
     properties: Dict[str, Dict]
     parent: ParentObject
 
 
 class Block(NotionObject):
     block_type: Literal[
-        "paragraph", "heading_1", "heading_2", "heading_3", "callout",
-        "quote", "bulleted_list_item", "numbered_list_item", "to_do", "toggle",
-        "code", "child_page", "child_database", "embed", "image", "video",
-        "file", "pdf", "bookmark", "equation", "divider", "table_of_contents",
-        "breadcrumb", "column_list", "column", "link_preview", "template",
-        "link_to_page", "synced_block", "table", "table_row", "unsupported"
+        "paragraph",
+        "heading_1",
+        "heading_2",
+        "heading_3",
+        "callout",
+        "quote",
+        "bulleted_list_item",
+        "numbered_list_item",
+        "to_do",
+        "toggle",
+        "code",
+        "child_page",
+        "child_database",
+        "embed",
+        "image",
+        "video",
+        "file",
+        "pdf",
+        "bookmark",
+        "equation",
+        "divider",
+        "table_of_contents",
+        "breadcrumb",
+        "column_list",
+        "column",
+        "link_preview",
+        "template",
+        "link_to_page",
+        "synced_block",
+        "table",
+        "table_row",
+        "unsupported",
     ] = typeField
 
     _class_map = {
@@ -197,7 +214,7 @@ class Block(NotionObject):
         "synced_block": "SyncedBlock",
         "table": "TableBlock",
         "table_row": "TableRowBlock",
-        "unsupported": "UnsupportedBlock"
+        "unsupported": "UnsupportedBlock",
     }
     _block_map = {v: k for k, v in _class_map.items()}
 
@@ -222,21 +239,16 @@ class Block(NotionObject):
                 # It is a Block, not a subclass
                 return values
             else:
-                try:
-                    value_type = cls.__fields__[block_type].type_
-                except KeyError as e:
-                    # One of the blocks with no stored information
-                    return {
-                        "object": "block",
-                        "type": block_type
-                    }
-
-                obj = value_type(**values)
-                return {
-                    block_type: obj,
-                    "object": "block",
-                    "type": block_type
-                }
+                values["object"] = "block"
+                values["type"] = block_type
+                return values
         except ValidationError:
             pass
         return values
+
+    def patch_json(self):
+        block_content = getattr(self, self.block_type).dict(
+            by_alias=True, exclude_unset=True, exclude_none=True
+        )
+        values = {self.block_type: block_content}
+        return json.dumps(values)

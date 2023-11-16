@@ -1,8 +1,7 @@
+from python_notion_api.models.blocks import Block
 from python_notion_api.models.common import DateObject
-
 from python_notion_api.models.properties import PropertyItem
 from python_notion_api.utils import get_derived_class
-from python_notion_api.models.blocks import Block
 
 
 class PropertyItemIterator:
@@ -27,14 +26,13 @@ class PropertyItemIterator:
 
     def _get_value(self):
         prop_cls = get_derived_class(
-            PropertyItem,
-            PropertyItem._class_map.get(self.property_type)
+            PropertyItem, PropertyItem._class_map.get(self.property_type)
         )
         return prop_cls(
             id=self.property_id,
             init=[
                 getattr(item, self.property_type) for item, _ in self.generator
-            ]
+            ],
         ).value
 
 
@@ -56,11 +54,8 @@ class RollupPropertyItemIterator(PropertyItemIterator):
             return [
                 get_derived_class(
                     PropertyItem,
-                    PropertyItem._class_map.get(item.property_type)
-                )(
-                    id=self.property_id,
-                    init=getattr(item, item.property_type)
-                )
+                    PropertyItem._class_map.get(item.property_type),
+                )(id=self.property_id, init=getattr(item, item.property_type))
                 for item in items
             ]
         elif prop_type == "number":
@@ -78,9 +73,7 @@ class RollupPropertyItemIterator(PropertyItemIterator):
 
 def create_property_iterator(generator, property_item):
     if property_item.property_type == "rollup":
-        return RollupPropertyItemIterator(
-            generator, property_item
-        )
+        return RollupPropertyItemIterator(generator, property_item)
     else:
         return PropertyItemIterator(generator, property_item)
 

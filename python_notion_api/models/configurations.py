@@ -1,12 +1,10 @@
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
 
-from python_notion_api.models.fields import (
-    idField, typeField
-)
-
-from python_notion_api.models.objects import NotionObjectBase
 from python_notion_api.models.common import SelectObject
+from python_notion_api.models.fields import idField, typeField
+from python_notion_api.models.objects import NotionObjectBase
 
 EmptyField = Optional[Dict]
 
@@ -37,7 +35,7 @@ class NotionPropertyConfiguration(NotionObjectBase):
         "last_edited_time": "LastEditedTimePropertyConfiguration",
         "last_edited_by": "LastEditedTimePropertyConfiguration",
         "status": "StatusPropertyConfiguration",
-        "unique_id": "UniqueIDPropertyConfiguration"
+        "unique_id": "UniqueIDPropertyConfiguration",
     }
 
     @property
@@ -60,7 +58,7 @@ class TextPropertyConfiguration(NotionPropertyConfiguration):
 class NumberPropertyConfiguration(NotionPropertyConfiguration):
     _class_key_field = None
 
-    number_format: Optional[str] = Field(alias="format", default='')
+    number_format: Optional[str] = Field(alias="format", default="")
 
 
 class SelectPropertyConfiguration(NotionPropertyConfiguration):

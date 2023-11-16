@@ -1,20 +1,17 @@
 import json
 from typing import Any, Dict, List, Optional, Union
 
-from python_notion_api.models.objects import (
-    Block, Pagination
-)
-
-from python_notion_api.models.properties import PropertyItem
-from python_notion_api.models.values import PropertyValue, generate_value
-from python_notion_api.async_api.utils import ensure_loaded
 from pydantic import BaseModel
 
 from python_notion_api.async_api import (
-    AsyncPropertyItemIterator,
     AsyncBlockIterator,
-    create_property_iterator
+    AsyncPropertyItemIterator,
+    create_property_iterator,
 )
+from python_notion_api.async_api.utils import ensure_loaded
+from python_notion_api.models.objects import Block, Pagination
+from python_notion_api.models.properties import PropertyItem
+from python_notion_api.models.values import PropertyValue, generate_value
 
 
 class NotionPage:
@@ -42,9 +39,8 @@ class NotionPage:
         self.database = database
 
     async def reload(self):
-        """Reloads page from Notion.
-        """
-        self._object = await self._api._get(endpoint=f'pages/{self._page_id}')
+        """Reloads page from Notion."""
+        self._object = await self._api._get(endpoint=f"pages/{self._page_id}")
         if self._object is not None:
             parent_id = self.parent.database_id
             if parent_id is not None:
@@ -74,12 +70,14 @@ class NotionPage:
         or 'Restore page' action if archive_status is False.
         """
         await self._api._patch(
-            endpoint=f'pages/{self._page_id}',
-            data=json.dumps({"archived": archive_status})
+            endpoint=f"pages/{self._page_id}",
+            data=json.dumps({"archived": archive_status}),
         )
 
     @ensure_loaded
-    async def set(self, prop_key: str, value: Any, reload_page: bool = False) -> None:
+    async def set(
+        self, prop_key: str, value: Any, reload_page: bool = False
+    ) -> None:
         """Wrapper for 'Update page' action.
 
         Args:
@@ -90,37 +88,23 @@ class NotionPage:
         prop_name = self._get_prop_name(prop_key=prop_key)
 
         if prop_name is None:
-            raise ValueError(
-                f"Unknown property '{prop_name}'"
-            )
+            raise ValueError(f"Unknown property '{prop_name}'")
 
         prop_type = self._object.properties[prop_name]["type"]
 
         value = generate_value(prop_type, value)
-        request = NotionPage.PatchRequest(
-            properties={
-                prop_name: value
-            }
-        )
+        request = NotionPage.PatchRequest(properties={prop_name: value})
 
-        data = request.json(
-            by_alias=True,
-            exclude_unset=True
-        )
+        data = request.json(by_alias=True, exclude_unset=True)
 
-        await self._api._patch(
-            endpoint=f'pages/{self._page_id}',
-            data=data
-        )
+        await self._api._patch(endpoint=f"pages/{self._page_id}", data=data)
 
         if reload_page:
             await self.reload()
 
     @ensure_loaded
     async def update(
-        self,
-        properties: Dict[str, Any],
-        reload_page: bool = False
+        self, properties: Dict[str, Any], reload_page: bool = False
     ) -> None:
         """Update page with a dictionary of new values.
 
@@ -135,37 +119,27 @@ class NotionPage:
             prop_name = self._get_prop_name(prop_key=prop_key)
 
             if prop_name is None:
-                raise ValueError(
-                    f"Unknown property '{prop_name}'"
-                )
+                raise ValueError(f"Unknown property '{prop_name}'")
 
             prop_type = self._object.properties[prop_name]["type"]
 
             value = generate_value(prop_type, value)
             values[prop_name] = value
 
-        request = NotionPage.PatchRequest(
-            properties=values
-        )
+        request = NotionPage.PatchRequest(properties=values)
 
-        data = request.json(
-            by_alias=True,
-            exclude_unset=True
-        )
+        data = request.json(by_alias=True, exclude_unset=True)
 
-        await self._api._patch(
-            endpoint=f'pages/{self._page_id}',
-            data=data
-        )
+        await self._api._patch(endpoint=f"pages/{self._page_id}", data=data)
 
         if reload_page:
             await self.reload()
 
     @ensure_loaded
-    async def get_properties(self, raw: bool = False) -> Dict[
-            str, PropertyValue]:
-        """Returns all properties of the page.
-        """
+    async def get_properties(
+        self, raw: bool = False
+    ) -> Dict[str, PropertyValue]:
+        """Returns all properties of the page."""
         return {
             prop_name: await self.get(prop_name, raw=raw)
             for prop_name in self._object.properties
@@ -176,8 +150,8 @@ class NotionPage:
         self,
         include_rels: bool = True,
         rels_only=False,
-        properties: Optional[Union[str, List]] = None) \
-            -> Dict[str, Union[str, List]]:
+        properties: Optional[Union[str, List]] = None,
+    ) -> Dict[str, Union[str, List]]:
         """Returns all properties of the page as simple values.
 
         Args:
@@ -214,19 +188,14 @@ class NotionPage:
         Returns:
             Iterator of blocks is returned.
         """
-        request = NotionPage.AddBlocksRequest(
-            children=blocks
-        )
+        request = NotionPage.AddBlocksRequest(children=blocks)
 
         data = request.json(
-            by_alias=True,
-            exclude_unset=True,
-            exclude_none=True
+            by_alias=True, exclude_unset=True, exclude_none=True
         )
 
         new_blocks = await self._api._patch(
-            endpoint=f'blocks/{self.page_id}/children',
-            data=data
+            endpoint=f"blocks/{self.page_id}/children", data=data
         )
         return AsyncBlockIterator(iter(new_blocks.results))
 
@@ -239,7 +208,7 @@ class NotionPage:
         """
 
         generator = self._api._get_iterate(
-            endpoint=f'blocks/{self._page_id}/children'
+            endpoint=f"blocks/{self._page_id}/children"
         )
         return AsyncBlockIterator(generator)
 
@@ -249,7 +218,7 @@ class NotionPage:
         prop_key: str,
         cache: bool = True,
         safety_off: bool = False,
-        raw: bool = False
+        raw: bool = False,
     ) -> Union[PropertyValue, AsyncPropertyItemIterator]:
         """
         First checks if the property is 'special', if so, will call the special
@@ -274,9 +243,7 @@ class NotionPage:
             property_value = attr
         else:
             property_value = await self._direct_get(
-                prop_key=prop_key,
-                cache=cache,
-                safety_off=safety_off
+                prop_key=prop_key, cache=cache, safety_off=safety_off
             )
 
         if raw:
@@ -314,23 +281,20 @@ class NotionPage:
 
         # We need to always query the API for formulas and rollups as
         # otherwise we might get incorrect values.
-        if (
-            not safety_off
-            and prop_type in ('formula', 'rollup')
-        ):
+        if not safety_off and prop_type in ("formula", "rollup"):
             cache = False
 
-        if (cache and not obj.has_more):
+        if cache and not obj.has_more:
             return PropertyValue.from_property_item(obj)
 
         ret = await self._api._get(
-            endpoint=f'pages/{self._page_id}/properties/{prop_id}',
-            params={"page_size": 20}
+            endpoint=f"pages/{self._page_id}/properties/{prop_id}",
+            params={"page_size": 20},
         )
 
         if isinstance(ret, Pagination):
             generator = self._api._get_iterate(
-                endpoint=f'pages/{self._page_id}/properties/{prop_id}'
+                endpoint=f"pages/{self._page_id}/properties/{prop_id}"
             )
             return create_property_iterator(generator, obj)
 
@@ -349,10 +313,11 @@ class NotionPage:
         _properties = self._object.properties
         prop_name = next(
             (
-                key for key in _properties
-                if key == prop_key or _properties[key]['id'] == prop_key
+                key
+                for key in _properties
+                if key == prop_key or _properties[key]["id"] == prop_key
             ),
-            None
+            None,
         )
 
         return prop_name
