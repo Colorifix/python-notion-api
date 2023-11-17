@@ -99,6 +99,9 @@ class TestPage:
             < 60000
         )
 
+    @mark.skip(
+        reason="This test will create a notification for the TEST_PEOPLE"
+    )
     def test_set_person(self, new_page):
         new_page.set("Person", TEST_PEOPLE)
         assert new_page.get("Person", cache=False).value == ["Mihails Delmans"]
@@ -123,6 +126,9 @@ class TestPage:
         new_page.alive = True
         assert new_page.alive
 
+    @mark.skip(
+        reason="This test will create a notification for the TEST_PEOPLE"
+    )
     def test_create_new_page(self, database):
         new_page = database.create_page(
             properties={

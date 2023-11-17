@@ -6,7 +6,7 @@ from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 
 from python_notion_api import File
-from python_notion_api.async_api import AsyncNotionAPI
+from python_notion_api.async_api.api import AsyncNotionAPI
 from python_notion_api.models.filters import (
     MultiSelectFilter,
     SelectFilter,
@@ -114,6 +114,9 @@ class TestPage:
             < 60000
         )
 
+    @mark.skip(
+        reason="This test will create a notification for the TEST_PEOPLE"
+    )
     async def test_set_person(self, page):
         await page.set("Person", TEST_PEOPLE)
         assert await page.get("Person", cache=False) == ["Mihails Delmans"]
@@ -130,6 +133,9 @@ class TestPage:
             "-", ""
         ) == page.page_id
 
+    @mark.skip(
+        reason="This test will create a notification for the TEST_PEOPLE"
+    )
     async def test_create_new_page(self, database):
         new_page = await database.create_page(
             properties={
