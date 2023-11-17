@@ -2,7 +2,7 @@ from typing import Any, Dict, Generator, List, Optional
 
 from pydantic import BaseModel
 
-from python_notion_api.async_api import NotionPage
+from python_notion_api.async_api.notion_page import NotionPage
 from python_notion_api.async_api.utils import ensure_loaded
 from python_notion_api.models.common import FileObject, ParentObject
 from python_notion_api.models.configurations import (

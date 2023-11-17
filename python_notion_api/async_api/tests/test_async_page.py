@@ -5,7 +5,8 @@ from pytest import mark
 from pytest_asyncio import fixture as async_fixture
 
 from python_notion_api import PropertyValue
-from python_notion_api.async_api import AsyncPropertyItemIterator, NotionPage
+from python_notion_api.async_api.iterators import AsyncPropertyItemIterator
+from python_notion_api.async_api.notion_page import NotionPage
 
 
 @mark.asyncio

@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from python_notion_api.async_api import AsyncNotionAPI
+from python_notion_api.async_api.api import AsyncNotionAPI
 
 
 async def main():

@@ -6,7 +6,9 @@ from typing import Any, Dict, Generator, Literal, Optional, Type
 import aiohttp
 from loguru import logger
 
-from python_notion_api.async_api import NotionBlock, NotionDatabase, NotionPage
+from python_notion_api.async_api.notion_block import NotionBlock
+from python_notion_api.async_api.notion_database import NotionDatabase
+from python_notion_api.async_api.notion_page import NotionPage
 from python_notion_api.async_api.retry_strategy import RetryStrategy
 from python_notion_api.models.objects import NotionObjectBase, User
 from python_notion_api.models.properties import NotionObject

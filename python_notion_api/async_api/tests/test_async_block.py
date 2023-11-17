@@ -3,7 +3,7 @@ from copy import copy
 from pytest import mark
 from pytest_asyncio import fixture as async_fixture
 
-from python_notion_api.async_api import NotionBlock
+from python_notion_api.async_api.notion_block import NotionBlock
 from python_notion_api.models import ParagraphBlock, RichTextObject
 
 TEST_BLOCK_ID = "f572e889cd374edbbd15d8bf13174bbc"

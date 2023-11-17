@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from python_notion_api.async_api import (
+from python_notion_api.async_api.iterators import (
     AsyncBlockIterator,
     AsyncPropertyItemIterator,
     create_property_iterator,
