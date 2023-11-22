@@ -311,3 +311,22 @@ class TestDatabase:
         pages = database.query(sorts=[Sort(property="Date", descending=True)])
         page = next(pages)
         assert page is not None
+
+
+@mark.parametrize(
+    "filter_type,filter_attribute",
+    [[or_filter, "filter_or"], [and_filter, "filter_and"]],
+)
+@mark.parametrize(
+    "full_length,num_splits,split_lengths",
+    [[199, 2, [100, 99]], [200, 2, [100, 100]], [201, 3, [100, 100, 1]]],
+)
+def test_large_filter_lengths(
+    filter_type, filter_attribute, full_length, num_splits, split_lengths
+):
+    filters = filter_type(
+        [NumberFilter(property="Number", equals=x) for x in range(full_length)]
+    )
+    assert len(getattr(filters, filter_attribute)) == num_splits
+    for i, split in enumerate(getattr(filters, filter_attribute)):
+        assert len(getattr(split, filter_attribute)) == split_lengths[i]

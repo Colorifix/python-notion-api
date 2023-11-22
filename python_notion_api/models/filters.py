@@ -211,7 +211,7 @@ def or_filter(filters: List[FilterItem]):
     if len(filters) > 100:
         filters = [
             or_filter(filters[i : i + 100])
-            for i in range(0, len(filters) + 1, 100)
+            for i in range(0, len(filters), 100)
         ]
     return OrFilter(**{"or": filters})
 
@@ -233,7 +233,7 @@ def and_filter(filters: List[FilterItem]):
     if len(filters) > 100:
         filters = [
             and_filter(filters[i : i + 100])
-            for i in range(0, len(filters) + 1, 100)
+            for i in range(0, len(filters), 100)
         ]
     return AndFilter(**{"and": filters})
 
