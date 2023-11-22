@@ -42,8 +42,8 @@ class PropertyValue(BaseModel):
 
     @root_validator(pre=True)
     def validate_init(cls, values):
-        init = values.get("init", None)
-        if init is not None:
+        if hasattr(cls, "_type_map") and "init" in values:
+            init = values.get("init")
             for check_type, method_name in cls._type_map.items():
                 try:
                     obj = parse_obj_as(check_type, init)
@@ -58,11 +58,21 @@ class PropertyValue(BaseModel):
         return init
 
     @classmethod
+    def validate_none(cls, init: None):
+        # Need to explicitly set None so not counted as unset
+        return None
+
+    @classmethod
+    def validate_none_list(cls, init: None):
+        # Set as an empty list
+        return []
+
+    @classmethod
     def from_property_item(cls, obj):
         derived_cls = get_value_class(obj.property_type)
         if derived_cls is None:
             raise NotImplementedError(
-                f"Proerty type {obj.property_type}" " is not supported"
+                f"Property type {obj.property_type}" " is not supported"
             )
         return derived_cls(
             **{
@@ -78,6 +88,7 @@ class TitlePropertyValue(PropertyValue):
         str: "validate_str",
         List[RichTextObject]: "leave_unchanged",
         RichTextObject: "validate_rich_text",
+        type(None): "validate_none_list",
     }
     _set_field = "title"
 
@@ -102,6 +113,7 @@ class RichTextPropertyValue(PropertyValue):
         str: "validate_str",
         List[RichTextObject]: "leave_unchanged",
         RichTextObject: "validate_rich_text",
+        type(None): "validate_none_list",
     }
     _set_field = "rich_text"
 
@@ -125,6 +137,7 @@ class NumberPropertyValue(PropertyValue):
     _type_map = {
         float: "leave_unchanged",
         int: "leave_unchanged",
+        type(None): "validate_none",
     }
     _set_field = "number"
 
@@ -137,7 +150,11 @@ class NumberPropertyValue(PropertyValue):
 
 
 class SelectPropertyValue(PropertyValue):
-    _type_map = {SelectObject: "leave_unchanged", str: "validate_str"}
+    _type_map = {
+        SelectObject: "leave_unchanged",
+        str: "validate_str",
+        type(None): "validate_none",
+    }
     _set_field = "select"
 
     init: excluded(Optional[Union[SelectObject, str]])
@@ -171,7 +188,11 @@ class StatusPropertyValue(PropertyValue):
 
 
 class MultiSelectPropertyValue(PropertyValue):
-    _type_map = {List[SelectObject]: "leave_unchanged", List: "validate_str"}
+    _type_map = {
+        List[SelectObject]: "leave_unchanged",
+        List: "validate_str",
+        type(None): "validate_none_list",
+    }
     _set_field = "multi_select"
 
     init: excluded(Optional[Union[List[SelectObject], List[str]]])
@@ -194,6 +215,7 @@ class DatePropertyValue(PropertyValue):
         DateObject: "leave_unchanged",
         Tuple[datetime, datetime]: "validate_date_tuple",
         Tuple[str, str]: "validate_str_tuple",
+        type(None): "validate_none",
     }
 
     _set_field = "date"
@@ -248,7 +270,11 @@ class DatePropertyValue(PropertyValue):
 
 
 class PeoplePropertyValue(PropertyValue):
-    _type_map = {List[str]: "validate_str", List[User]: "leave_unchanged"}
+    _type_map = {
+        List[str]: "validate_str",
+        List[User]: "leave_unchanged",
+        type(None): "validate_none_list",
+    }
     _set_field = "people"
 
     init: excluded(Optional[Union[List[str], List[User]]])
@@ -268,8 +294,11 @@ class PeoplePropertyValue(PropertyValue):
 
 
 class FilesPropertyValue(PropertyValue):
-    _type_map = {FilePath: "validate_file_path", List[File]: "validate_file"}
-
+    _type_map = {
+        FilePath: "validate_file_path",
+        List[File]: "validate_file",
+        type(None): "validate_none_list",
+    }
     _set_field = "files"
 
     init: excluded(Optional[List[File]])
@@ -312,6 +341,7 @@ class URLPropertyValue(PropertyValue):
         AnyUrl: "leave_unchanged",
         FilePath: "validate_file_path",
         File: "validate_file",
+        type(None): "validate_none",
     }
     _set_field = "url"
 
@@ -332,7 +362,7 @@ class URLPropertyValue(PropertyValue):
 
 
 class EmailPropertyValue(PropertyValue):
-    _type_map = {str: "leave_unchanged"}
+    _type_map = {str: "leave_unchanged", type(None): "validate_none"}
     _set_field = "email"
 
     init: excluded(Optional[str])
@@ -344,7 +374,7 @@ class EmailPropertyValue(PropertyValue):
 
 
 class PhoneNumberPropertyValue(PropertyValue):
-    _type_map = {str: "leave_unchanged"}
+    _type_map = {str: "leave_unchanged", type(None): "validate_none"}
     _set_field = "phone_number"
 
     init: excluded(Optional[str])
@@ -361,6 +391,7 @@ class RelationPropertyValue(PropertyValue):
         List[str]: "validate_list",
         str: "validate_str",
         RelationObject: "validate_relation",
+        type(None): "validate_none_list",
     }
     _set_field = "relation"
 

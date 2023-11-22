@@ -269,8 +269,6 @@ class NotionPage:
         """
         values = {}
         for prop_key, value in properties.items():
-            if value is None:
-                continue
             prop_name = self._get_prop_name(prop_key=prop_key)
 
             if prop_name is None:

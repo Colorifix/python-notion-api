@@ -89,6 +89,27 @@ class TestPage:
         new_page.set(property, value)
         assert new_page.get(property, cache=False).value == value
 
+    @mark.parametrize(
+        "property,expected_return_value",
+        [
+            ["Name", ""],
+            ["Text", ""],
+            ["Number", None],
+            ["Select", None],
+            ["Multi-select", []],
+            ["URL", None],
+            ["Email", None],
+            ["Phone", None],
+        ],
+    )
+    def test_set_and_get_properties_empty(
+        self, new_page, property, expected_return_value
+    ):
+        new_page.set(property, None)
+        assert (
+            new_page.get(property, cache=False).value == expected_return_value
+        )
+
     def test_set_date(self, new_page):
         new_page.set("Date", TEST_DATE)
         assert (
@@ -165,14 +186,20 @@ class TestPage:
 
     def test_update(self, new_page):
         new_page.update(
-            properties={"%3E%5Ehh": TEST_EMAIL, "Phone": TEST_PHONE}
+            properties={
+                "%3E%5Ehh": TEST_EMAIL,
+                "Phone": TEST_PHONE,
+                "Multi-select": None,
+            }
         )
 
         email = new_page.get("Email", cache=False).value
         phone = new_page.get("Phone", cache=False).value
+        multi_select = new_page.get("Multi-select", cache=False).value
 
         assert email == TEST_EMAIL
         assert phone == TEST_PHONE
+        assert multi_select == []
 
     def test_reload(self, new_page):
         new_page.set("Email", TEST_EMAIL)
