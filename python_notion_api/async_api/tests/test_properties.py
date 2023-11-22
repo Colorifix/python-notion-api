@@ -104,6 +104,25 @@ class TestPage:
         await page.set(property, value)
         assert await page.get(property, cache=False) == value
 
+    @mark.parametrize(
+        "property,expected_return_value",
+        [
+            ["Name", ""],
+            ["Text", ""],
+            ["Number", None],
+            ["Select", None],
+            ["Multi-select", []],
+            ["URL", None],
+            ["Email", None],
+            ["Phone", None],
+        ],
+    )
+    async def test_set_and_get_properties_empty(
+        self, page, property, expected_return_value
+    ):
+        await page.set(property, None)
+        assert await page.get(property, cache=False) == expected_return_value
+
     async def test_set_date(self, page):
         await page.set("Date", TEST_DATE)
         assert (
@@ -172,14 +191,20 @@ class TestPage:
 
     async def test_update(self, page):
         await page.update(
-            properties={"%3E%5Ehh": TEST_EMAIL, "Phone": TEST_PHONE}
+            properties={
+                "%3E%5Ehh": TEST_EMAIL,
+                "Phone": TEST_PHONE,
+                "Multi-select": None,
+            }
         )
 
         email = await page.get("Email", cache=False)
         phone = await page.get("Phone", cache=False)
+        multi_select = await page.get("Multi-select", cache=False)
 
         assert email == TEST_EMAIL
         assert phone == TEST_PHONE
+        assert not multi_select
 
     async def test_reload(self, page):
         await page.set("Email", TEST_EMAIL)
