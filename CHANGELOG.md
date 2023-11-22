@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.7.0] - 2023/11/22
+
+### Added
+
+- test stage to pipeline
+- Async client
+
+### Fixed
+
+- or_filters and and_filters that are exactly 200, 300,... items long are faulty
+- Property values could not be set to None
+- Or filters cannot have more than 100 items.
+
+### Changed
+
+- Convert to Pytest
+
 ## [0.6.0] - 2023/10/05
 
 ### Changed
