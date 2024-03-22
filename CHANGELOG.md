@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.8.0] - 2024/03/22
+
+### Fixed
+
+- relationship configuration
+
+### Changed
+
+- soft upgrade to pydantic2
+
 ## [0.7.0] - 2023/11/22
 
 ### Added
