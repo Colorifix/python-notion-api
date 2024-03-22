@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import Field
+from pydantic.v1 import Field
 
 from python_notion_api.models.objects import NotionObject
 from python_notion_api.models.values import (

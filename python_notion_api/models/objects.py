@@ -2,7 +2,13 @@ import json
 from datetime import datetime
 from typing import ClassVar, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Extra, Field, ValidationError, root_validator
+from pydantic.v1 import (
+    BaseModel,
+    Extra,
+    Field,
+    ValidationError,
+    root_validator,
+)
 
 from python_notion_api.models.common import (
     EmojiObject,

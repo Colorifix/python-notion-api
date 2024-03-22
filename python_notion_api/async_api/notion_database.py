@@ -1,6 +1,6 @@
 from typing import Any, Dict, Generator, List, Optional
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from python_notion_api.async_api.notion_page import NotionPage
 from python_notion_api.async_api.utils import ensure_loaded

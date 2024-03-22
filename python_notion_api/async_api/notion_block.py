@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from python_notion_api.async_api.iterators import AsyncBlockIterator
 from python_notion_api.async_api.utils import ensure_loaded

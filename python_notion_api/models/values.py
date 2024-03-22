@@ -3,7 +3,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from loguru import logger
-from pydantic import (
+from pydantic.v1 import (
     AnyUrl,
     BaseModel,
     Field,

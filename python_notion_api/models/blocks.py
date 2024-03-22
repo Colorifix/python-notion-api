@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-from pydantic import AnyUrl, BaseModel
+from pydantic.v1 import AnyUrl, BaseModel
 
 from python_notion_api.models.common import (
     EmojiObject,
