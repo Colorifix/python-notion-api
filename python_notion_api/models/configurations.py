@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic.v1 import BaseModel, Field
 
 from python_notion_api.models.common import SelectObject
 from python_notion_api.models.fields import idField, typeField

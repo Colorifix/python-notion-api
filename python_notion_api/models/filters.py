@@ -1,7 +1,13 @@
 import re
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Extra, StrictFloat, StrictInt, root_validator
+from pydantic.v1 import (
+    BaseModel,
+    Extra,
+    StrictFloat,
+    StrictInt,
+    root_validator,
+)
 
 from python_notion_api.models.fields import andField, orField, propertyField
 

@@ -3,7 +3,7 @@ from math import floor
 from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
 
 from loguru import logger
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 from requests.packages.urllib3 import PoolManager
 from requests.packages.urllib3.exceptions import MaxRetryError
 from requests.packages.urllib3.util.retry import Retry

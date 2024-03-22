@@ -3,7 +3,7 @@ from datetime import date, datetime
 from io import BytesIO
 from typing import Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from python_notion_api.gdrive import GDrive
 from python_notion_api.models.fields import idField, typeField

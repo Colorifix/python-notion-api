@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, PositiveInt
+from pydantic.v1 import BaseModel, Field, PositiveInt
 
 
 class RetryStrategy(BaseModel):
