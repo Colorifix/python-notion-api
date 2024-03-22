@@ -131,16 +131,45 @@ class FormulaPropertyConfiguration(NotionPropertyConfiguration):
     formula: FormulaConfigurationObject
 
 
-class RelationConfigurationObject(BaseModel):
-    database_id: str
-    synced_property_name: Optional[str]
-    synced_property_id: Optional[str]
-
-
 class RelationPropertyConfiguration(NotionPropertyConfiguration):
+    @property
+    def _class_key_field(self):
+        return self.relation["type"]
+
+    _class_map = {
+        "single_property": "SinglePropertyConfiguration",
+        "dual_property": "DualPropertyConfiguration",
+    }
+
+    relation: Dict
+
+
+class SinglePropertyConfigurationObject(BaseModel):
+    database_id: str
+    relation_type: str = typeField
+    single_property: Dict
+
+
+class SinglePropertyConfiguration(RelationPropertyConfiguration):
     _class_key_field = None
 
-    relation: RelationConfigurationObject
+    relation: SinglePropertyConfigurationObject
+
+
+class SyncedPropertyConfigurationObject(BaseModel):
+    synced_property_id: str
+    synced_property_name: str
+
+
+class DualPropertyConfigurationObject(BaseModel):
+    database_id: str
+    dual_property: SyncedPropertyConfigurationObject
+
+
+class DualPropertyConfiguration(RelationPropertyConfiguration):
+    _class_key_field = None
+
+    relation: DualPropertyConfigurationObject
 
 
 class RollupConfigurationObject(BaseModel):
