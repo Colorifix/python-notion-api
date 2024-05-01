@@ -37,7 +37,7 @@ class AsyncNotionAPI:
         self._default_retry_strategy = RetryStrategy(
             total=3,
             backoff_factor=0.1,
-            status_forcelist=[429, 500, 502, 503, 504],
+            status_forcelist=[429, 500, 502, 503, 504, 409],
         )
         self._page_limit = page_limit
 
