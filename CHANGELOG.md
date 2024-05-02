@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.9.0] - 2024/05/02
+
+### Added
+
+- 409 to retry error list
+
 ## [0.8.0] - 2024/03/22
 
 ### Fixed
