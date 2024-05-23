@@ -4,6 +4,7 @@ from math import floor
 from typing import Any, Dict, Generator, Literal, Optional, Type
 
 import aiohttp
+from aiolimiter import AsyncLimiter
 from loguru import logger
 
 from python_notion_api.async_api.notion_block import NotionBlock
@@ -26,10 +27,17 @@ class AsyncNotionAPI:
     Args:
         access_token: Notion access token
         api_version: Version of the notion API
+        rate_limit: (number_of_requests, number of seconds). Default
+        is set at the rate limit of Notion (3 per second), with a longer
+        interval to allow bursts.
     """
 
     def __init__(
-        self, access_token: str, api_version="2022-06-28", page_limit=20
+        self,
+        access_token: str,
+        api_version="2022-06-28",
+        page_limit=20,
+        rate_limit=(500, 200),
     ):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"
@@ -40,6 +48,7 @@ class AsyncNotionAPI:
             status_forcelist=[429, 500, 502, 503, 504, 409],
         )
         self._page_limit = page_limit
+        self.limiter = AsyncLimiter(*rate_limit)
 
     @property
     def request_headers(self):
@@ -104,13 +113,14 @@ class AsyncNotionAPI:
             data: Data to pass to the request.
             params: Params to pass to the request.
         """
-        return await session.request(
-            method=request_type,
-            url=url,
-            headers=self.request_headers,
-            params=params,
-            data=data,
-        )
+        async with self.limiter:
+            return await session.request(
+                method=request_type,
+                url=url,
+                headers=self.request_headers,
+                params=params,
+                data=data,
+            )
 
     async def _request(
         self,
@@ -166,12 +176,21 @@ class AsyncNotionAPI:
                     )
                     raise Exception("Request failed")
 
-                delay = min(
-                    retry_strategy.backoff_factor * (2 ** (i)),
-                    retry_strategy.max_backoff,
-                )
+                if response.status == 429:
+                    delay = int(response.headers["Retry-After"])
+                    logger.warning(
+                        f"Request to {url} failed:"
+                        f"\n{response.status}"
+                        f"\nRetry-After: {delay}"
+                        f"\n{decoded_data}"
+                    )
+                else:
+                    delay = min(
+                        retry_strategy.backoff_factor * (2 ** (i)),
+                        retry_strategy.max_backoff,
+                    )
 
-                logger.error(
+                logger.warning(
                     f"Notion is busy ({response.status})."
                     f"Retrying ({i+1}) in {delay}s"
                 )
