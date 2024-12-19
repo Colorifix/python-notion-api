@@ -334,6 +334,12 @@ class TableRowBlock(Block):
     table_row: TableRowBlockValue
 
 
+class ToggleBlock(Block):
+    _class_key_field = None
+
+    toggle: ToggleBlockValue
+
+
 class UnsupportedBlock(Block):
     _class_key_field = None
 
