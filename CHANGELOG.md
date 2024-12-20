@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.10.0] - 2024/12/20
+
+### Added
+
+- Rate limiting the requests to Notion API
+
+### Fixed
+
+- Callout block resolution
+- Missing ToggleBlock
+
 ## [0.9.0] - 2024/05/02
 
 ### Added
