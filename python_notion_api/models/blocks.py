@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from pydantic.v1 import AnyUrl, BaseModel
 
@@ -48,7 +48,21 @@ class HeadingBlockValue(BaseModel):
 
 class CalloutBlockValue(BaseModel):
     rich_text: List[RichTextObject]
-    icon: Union[FileObject, EmojiObject]
+    icon: dict
+    color: Optional[str]
+    children: Optional[List[Block]]
+
+
+class CalloutEmojiBlockValue(CalloutBlockValue):
+    rich_text: List[RichTextObject]
+    icon: EmojiObject
+    color: Optional[str]
+    children: Optional[List[Block]]
+
+
+class CalloutFileBlockValue(CalloutBlockValue):
+    rich_text: List[RichTextObject]
+    icon: FileObject
     color: Optional[str]
     children: Optional[List[Block]]
 
@@ -181,9 +195,25 @@ class Heading3Block(Block):
 
 
 class CalloutBlock(Block):
+    callout: CalloutBlockValue
+
+    _class_map = {"emoji": "EmojiCalloutBlock", "file": "FileCalloutBlock"}
+
+    @property
+    def _class_key_field(self):
+        return self.callout.icon["type"]
+
+
+class EmojiCalloutBlock(CalloutBlock):
     _class_key_field = None
 
-    callout: CalloutBlockValue
+    callout: CalloutEmojiBlockValue
+
+
+class FileCalloutBlock(CalloutBlock):
+    _class_key_field = None
+
+    callout: CalloutFileBlockValue
 
 
 class QuoteBlock(Block):
