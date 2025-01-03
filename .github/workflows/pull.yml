@@ -1,0 +1,49 @@
+name: Pull workflow
+
+on:
+  push:
+    branches:
+      - '**'
+
+  pull_request:
+    branches:
+      - '**'
+
+
+jobs:
+  run-tests:
+    if: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print info
+        run: echo "Hello world"
+      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+    
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 'latest'
+
+      - name: Setup local venv
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+          poetry run python --version
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install -vvv
+
+      - name: Run tests
+        run: poetry run pytest
