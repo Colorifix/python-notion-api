@@ -130,7 +130,7 @@ class AsyncNotionAPI:
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
         retry_strategy: Optional[RetryStrategy] = None,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Main request handler.
 
         Should not be called directly, for internal use only.
@@ -207,7 +207,7 @@ class AsyncNotionAPI:
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
         retry_strategy: Any = None,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Wrapper for post requests.
 
         Should not be called directly, for internal use only.
@@ -232,7 +232,7 @@ class AsyncNotionAPI:
         endpoint: str,
         params: Dict[str, str] = {},
         cast_cls: Type[NotionObjectBase] = NotionObject,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Wrapper for post requests.
 
         Should not be called directly, for internal use only.
@@ -279,7 +279,7 @@ class AsyncNotionAPI:
         )
 
     async def _post_iterate(
-        self, endpoint: str, data: Dict[str, str] = {}, page_limit: int = None
+        self, endpoint: str, data: Dict[str, Any] = {}, page_limit: int = None
     ) -> NotionObjectGenerator:
         """Wrapper for post requests where expected return type is Pagination.
 
@@ -326,7 +326,7 @@ class AsyncNotionAPI:
         self,
         endpoint: str,
         params: Dict[str, str] = {},
-        page_limit: int = None,
+        page_limit: Optional[int] = None,
     ) -> NotionObjectGenerator:
         """Wrapper for get requests where expected return type is Pagination.
 

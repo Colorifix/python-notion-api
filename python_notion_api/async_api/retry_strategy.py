@@ -5,6 +5,6 @@ from pydantic.v1 import BaseModel, Field, PositiveInt
 
 class RetryStrategy(BaseModel):
     total: PositiveInt
-    backoff_factor: Optional[float] = Field(0, gte=0)
-    max_backoff: Optional[float] = Field(5, gte=0)
+    backoff_factor: Optional[float] = Field(0, gte=0, default=None)
+    max_backoff: Optional[float] = Field(5, gte=0, default=None)
     status_forcelist: List[int]
