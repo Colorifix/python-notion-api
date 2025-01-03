@@ -1,13 +1,6 @@
 # A Python implementation of the Notion API
 
-Object oriented API wrapper that uses Pydantic to convert Notion objects to Python objects and viceversa.
-
-Current alternatives are:
-
-- Client library for the official API, at the moment it doesn't resolve the objects to classes:
-https://github.com/ramnes/notion-sdk-py
-- Unofficial Python 3 client for Notion.so API v3, it doesn't use the official Notion API.
-https://github.com/jamalex/notion-py
+Object oriented API wrapper that uses Pydantic to convert Notion objects to Python objects and vice-versa.
 
 ## Quick start
 
@@ -15,7 +8,17 @@ https://github.com/jamalex/notion-py
 from python_notion_api import NotionAPI
 
 api = NotionAPI(
-    access_token='secret_token'
+    access_token='<NOTION_TOKEN>'
+)
+```
+
+or
+
+```python
+from python_notion_api import AsyncNotionAPI
+
+async_api = AsyncNotionAPI(
+    access_token='<NOTION_TOKEN>'
 )
 ```
 
@@ -24,33 +27,34 @@ api = NotionAPI(
 ### Retrieve a database
 
 ```python
-from python_notion_api import NotionAPI
-
-api = NotionAPI(
-    access_token='secret_token'
-)
-
-database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+database = api.get_database(database_id='<DATABASE_ID>')
 ```
 
-Returns a `NotionDatabase` object.
+or
+
+```python
+async def main():
+    database = await async_api.get_database(database_id='<DATABASE_ID>')
+```
 
 ### Query
 
 ```python
-from python_notion_api import NotionAPI
-
-api = NotionAPI(
-    access_token='secret_token'
-)
-
-database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+database = api.get_database(database_id='<DATABASE_ID>')
 
 for page in database.query():
     ...
 ```
 
-Allows you to iterate over all pages in the database.
+or
+
+```python
+async def main():
+    database = await async_api.get_database(database_id='<DATABASE_ID>')
+
+    async for page in database.query():
+        ...
+```
 
 ### Filters
 
@@ -59,8 +63,8 @@ You can use filter classes in `python_notion_api.models.filters` to create prope
 ```python
 from python_notion_api.models.filters import SelectFilter
 
-res = database.query(
-    filters=SelectFilter(property="Property Name", equals="xxx")
+for page in database.query(
+    filters=SelectFilter(property='<PROPERTY_NAME / PROPERTY_ID>', equals='<VALUE>')
 )
 ```
 
@@ -70,7 +74,7 @@ Timestamp, 'and' and 'or' filters are supported:
 from python_notion_api.models.filters import SelectFilter, NumberFilter, CheckboxFilter
 from python_notion_api.models.filters import and_filter, or_filter
 
-res = database.query(
+for page in database.query(
     filters=or_filter([
         SelectFilter(property="Select", equals="xxx"),
         and_filter([
@@ -90,7 +94,7 @@ You can use `python_notion_api.models.sorts.Sort` class to create sorts and pass
 ```python
 from python_notion_api.models.sorts import Sort
 
-res = database.query(
+for page in database.query(
     sorts=[
         Sort(property="Title"),
         Sort(property="Date", descending=True)
@@ -103,76 +107,63 @@ res = database.query(
 ### Retrieve a page
 
 ```python
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+page = api.get_page(page_id='<PAGE_ID>')
 ```
 
-Will return a `NotionPage` object.
+or
+
+```python
+async def main():
+    page = await async_api.get_page(page_id='<PAGE_ID>')
+```
 
 ### Create a page
 
 ```python
-from python_notion_api import NotionAPI
-
-api = NotionAPI(
-    access_token='secret_token'
-)
-
-database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-
-database.create_page(
-    properties={
-        "Title": "New page"
-    }
-)
-```
-
-The properties of the new page are set using a dictionary with the column name as the key and the new property as the value. The value can be set with either the raw value (as a string, a number, or a datetime) or with a class from `python_notion_api.models.common` for storing the object (e.g. `DateObject`,  `SelectObject`, `RichTextObject`, `TextObject`).
-E.g.
-
-```python
-database = api.get_database(database_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+database = api.get_database(database_id='<DATABASE_ID>')
 
 database.create_page(properties={
-    'Value': 234,
+    'Number_property': 234,
     'Select_property': 'select1',
     'Checkbox_property': True,
-    'Relation_property': ['xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx']
+    'Relation_property': ['<PAGE_ID>']
 })
 ```
 
 ### Update page
 
-Currently only supported for inividual properties.
-
-You can create a page in a database and set the properties of the new page. Formuas are not supported.
-
 ```python
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+page = api.get_page(page_id='<PAGE_ID>')
 
-page.set('Property name', 'new value')
+page.set('Number_property', 234)
+
+page.update(properties={'Select_property': 'select1', 'Checkbox_property': True})
 ```
 
 ### Archive page
 
-Pages can be archived as follows:
-```
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+```python
+page = api.get_page(page_id='<PAGE_ID>')
 
 page.alive = False
-```
 
-Archived pages can be restored for as long as they are in the bin.
-```
 page.alive = True
 ```
+or
 
-### Retrieve a page property item
+```python
 
-When getting a property through `page.get` or `page.properties` the return type will
-be either `PropertyValue` or `PropertyItemIterator` (for properties that can have multple values, i.e. relations, title, rich_text and people)
+async def main():
+    page = await async_api.get_page(page_id='<PAGE_ID>')
 
-Each property type is wrapped into it's own class defined in `api.models.properties`. To get a human-readable 'simple' value that represents the propery, you can use `PropertyValue.value` attribute. To get a list of all property items values from `PropertyItemIterator` you can use
-`PropertyItemIterator.value`. For rich_text and title property types `value` will return a concatenaded string.
+    await page.archive()
+
+    print(page.is_alive)
+
+    await page.unarchive()
+```
+
+### Retrieve a single page property item
 
 ```python
 page.get('Property name').value
@@ -184,10 +175,10 @@ for value in page.get('Relation property'):
 
 ### Retrieve page blocks
 
-Each block type has its own class in `models.blocks`.
 
 ```python
 blocks = page.get_blocks()
+
 for block in blocks:
     print(block.block_type)
 ```
@@ -231,7 +222,7 @@ class MyPage(NotionPage):
 This page class can be passed when querying a database or getting a page.
 
 ```python
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+page = api.get_page(page_id='<PAGE_ID>',
                     cast_cls=MyPage)
 
 
@@ -251,7 +242,7 @@ for page in database.query(cast_cls=MyPage, filters=NumberFilter(property='Value
 ### Retrieve a block
 
 ```python
-block = api.get_block(block_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+block = api.get_block(block_id='<BLOCK_ID>')
 ```
 
 ### Get and add block children
@@ -281,47 +272,6 @@ new_block = ParagraphBlock.from_obj({'object': 'block',
      'text': {'content': 'This is the text that will be added', 'link': None}}]}
 })
 
-block = api.get_block(block_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+block = api.get_block(block_id='<BLOCK_ID>')
 block.set(new_block)
 ```
-
-## Problems with rollups and formulas
-These can only reference values 1 level deep. For any deeper reference, for example A references B which references C, the returned value will likely be incorrect.
-There is no error or warning when this occurs, so be careful!
-
-A subclass of NotionPage can be used to fully recreate rollups and formulas (see above).
-
-## File upload
-The official Notion API doesn't yet support uploading files. As an alternative, it is possible to upload files to GDrive and use the
-link in a column of type File.
-
-To configure it, set the env variable `CLIENT_CONFIG_FILE` to the location of a json configuration file with the OAuth config file and the env variable `CREDENTIAlS` to the location of a json configuration file with the OAuth credentials.
-
-To run the tests, set the env variable `PARENT_ID` to the folder id of where to run the tests.
-
-Further information on how to set up your google drive authentication can be found [here](https://support.google.com/cloud/answer/6158849?hl=en&ref_topic=3473162).
-
-Example:
-
-```python
-from python_notion_api import NotionAPI
-from python_notion_api.models.common import File
-
-api = NotionAPI(access_token='secret_token')
-page = api.get_page(page_id='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-file = File.from_file_path(
-    file=file_path,
-    parent_id="xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    file_name="My File on GDrive",
-    format="pdf"
-)
-page.set('Files Property',[file])
-```
-
-The above example is specific to Files & Media properties. To upload a file to a URL property use `page.set("URL Property", file)`.
-
-Instead of a file path, a BytesIO object can be uploaded using the `File.from_stream` method.
-
-## Requirements
-
-This library requires `Python >= 3.7`. For full list of requirements, see the `pyproject.toml` file.
