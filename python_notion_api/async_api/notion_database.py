@@ -132,7 +132,7 @@ class NotionDatabase:
             will depend on the property type. Can be the raw value
             (e.g. string, float) or an object (e.g. SelectValue,
             NumberPropertyItem)
-            cover: URL of an image for the page cover. E.g. a gdrive url.
+            cover: URL of an image for the page cover
         """
 
         validated_properties = {}
