@@ -60,6 +60,8 @@ jobs:
     - name: Commit new version
       if: ${{ steps.gitflow-action.outputs.release_branch }}
       uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Bump version to ${{ steps.gitflow-action.outputs.version }}"
 
     # Building and publishing if we are in 'created new release mode'
     - name: Build and publish package
