@@ -37,7 +37,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ steps.gitflow-action.output.release_branch || 'fake_main' }}
+        ref: ${{ steps.gitflow-action.outputs.release_branch || 'fake_main' }}
 
     - name: Install Python
       uses: actions/setup-python@v5
@@ -50,13 +50,13 @@ jobs:
         poetry-version: 'latest'
 
     - name: Bump version
-      if: ${{ steps.gitflow-action.output.release_branch }}
+      if: ${{ steps.gitflow-action.outputs.release_branch }}
       env:
-        VERSION: ${{ steps.gitflow-action.output.version  }}
+        VERSION: ${{ steps.gitflow-action.outputs.version  }}
       run: poetry version $VERSION
 
     - name: Build and publish package
-      if: ${{ !steps.gitflow-action.output.release_branch }}
+      if: ${{ !steps.gitflow-action.outputs.release_branch }}
       env:
         TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN  }}
       run: |
