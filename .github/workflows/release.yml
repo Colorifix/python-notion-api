@@ -1,6 +1,16 @@
 name: Release workflow
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: 'Version number to release in X.Y.Z format'
+      dry_run:
+        type: boolean
+        default: true
+        description: 'Dry run'
 
 jobs:
   release_workflow:
@@ -12,7 +22,7 @@ jobs:
       with:
         develop_branch: "fake_develop"
         main_branch: "fake_main"
-        version_increment: "minor"
-        dry_run: true
+        version: ${{ inputs.version }}
+        dry_run: ${{ inputs.dry_run }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
