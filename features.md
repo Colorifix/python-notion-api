@@ -7,3 +7,4 @@
 # Hotfix 4
 # Hotfix 5
 # Hotfix 6
+# Feature 6
