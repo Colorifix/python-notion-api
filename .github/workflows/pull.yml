@@ -1,13 +1,9 @@
 name: Pull workflow
 
 on:
-  push:
-    branches:
-      - '**'
-
   pull_request:
     branches:
-      - '**'
+      - 'develop'
 
 env:
   NOTION_TOKEN: ${{ vars.NOTION_TOKEN }}
@@ -39,13 +35,32 @@ jobs:
           poetry config virtualenvs.create true --local
           poetry config virtualenvs.in-project true --local
           poetry run python --version
-      - name: Cache dependencies
-        uses: actions/cache@v3
+      
+      - name: Restore dependencies
+        id: restore-dependencies
+        uses: actions/cache/restore@v4
         with:
           path: ./.venv
           key: venv-${{ hashFiles('poetry.lock') }}
+
       - name: Install dependencies
+        if: steps.restore-dependencies.outputs.cache-hit != 'true'
         run: poetry install -vvv
+      
+      - name: Cache dependencies
+        uses: actions/cache/save@v4
+        with:
+          path: ./.venv
+          key: ${{ steps.restore-dependencies.outputs.cache-primary-key }}
+
+      - name: Install project
+        run: poetry install --only-root
 
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run pytest --junitxml=junit/test-results.xml
+      
+      - name: Publish test report
+        uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          report_paths: 'junit/test-results.xml'
