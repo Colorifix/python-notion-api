@@ -28,7 +28,7 @@ jobs:
         develop_branch: "fake_develop"
         main_branch: "fake_main"
         version: ${{ inputs.version }}
-        version_increment: ${{ contains(github.head_ref, 'refs/heads/hotfix/') && 'patch' || ''   }}
+        version_increment: ${{ contains(github.head_ref, 'hotfix/') && 'patch' || ''   }}
         dry_run: ${{ inputs.dry_run }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
