@@ -15,8 +15,8 @@ on:
     types:
       - closed
     branches:
-      - '/release/*'
-      - '/hotfix/*'
+      - 'fake_develop'
+      - 'fake_main'
 
 jobs:
   release_workflow:
