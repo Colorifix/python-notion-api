@@ -19,6 +19,8 @@ jobs:
       
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Install Python
         uses: actions/setup-python@v5
