@@ -9,6 +9,8 @@ on:
     branches:
       - '**'
 
+env:
+  NOTION_TOKEN: ${{ vars.NOTION_TOKEN }}
 
 jobs:
   run-tests:
