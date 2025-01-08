@@ -11,6 +11,9 @@ on:
         type: boolean
         default: true
         description: 'Dry run'
+  pull_request:
+    types:
+      - closed  
 
 jobs:
   release_workflow:
