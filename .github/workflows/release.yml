@@ -23,6 +23,7 @@ jobs:
 
     steps:
     - name: Gitflow action
+      id: gitflow-action
       uses: hoangvvo/gitflow-workflow-action@0.3.7
       with:
         develop_branch: "fake_develop"
@@ -32,3 +33,35 @@ jobs:
         dry_run: ${{ inputs.dry_run }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.gitflow-action.output.release_branch || 'fake_main' }}
+
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+  
+    - name: Install Poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 'latest'
+
+    - name: Bump version
+      if: ${{ steps.gitflow-action.output.release_branch }}
+      env:
+        VERSION: ${{ steps.gitflow-action.output.version  }}
+      run: poetry version $VERSION
+    
+    - name: 
+
+    - name: Build and publish package
+      if: ${{ !steps.gitflow-action.output.release_branch }}
+      env:
+        TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN  }}
+      run: |
+        poetry config repositories.testpypi https://test.pypi.org/legacy/
+        poetry config pypi-token.testpypi $TEST_PYPI_TOKEN
+        poetry publish --build --dry-run
