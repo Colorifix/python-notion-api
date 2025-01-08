@@ -1,0 +1,18 @@
+name: Release workflow
+
+on: workflow_dispatch
+
+jobs:
+  release_workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: gitflow-workflow-action release workflows
+      uses: hoangvvo/gitflow-workflow-action@0.3.7
+      with:
+        develop_branch: "fake_develop"
+        main_branch: "fake_main"
+        version_increment: "minor"
+        dry_run: true
+
+      
