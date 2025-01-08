@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Print github ref
+      run: echo "$GITHUB_REF"
     - name: Gitflow action
       uses: hoangvvo/gitflow-workflow-action@0.3.7
       with:
