@@ -35,9 +35,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.gitflow-action.output.release_branch || 'fake_main' }}
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.gitflow-action.output.release_branch || 'fake_main' }}
 
     - name: Install Python
       uses: actions/setup-python@v5
@@ -54,8 +54,6 @@ jobs:
       env:
         VERSION: ${{ steps.gitflow-action.output.version  }}
       run: poetry version $VERSION
-    
-    - name: 
 
     - name: Build and publish package
       if: ${{ !steps.gitflow-action.output.release_branch }}
