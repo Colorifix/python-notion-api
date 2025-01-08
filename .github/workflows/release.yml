@@ -14,5 +14,5 @@ jobs:
         main_branch: "fake_main"
         version_increment: "minor"
         dry_run: true
-
-      
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
