@@ -13,19 +13,23 @@ on:
         description: 'Dry run'
   pull_request:
     types:
-      - closed  
+      - closed
+    branches:
+      - '/release/*'
+      - '/hotfix/*'
 
 jobs:
   release_workflow:
     runs-on: ubuntu-latest
 
     steps:
-    - name: gitflow-workflow-action release workflows
+    - name: Gitflow action
       uses: hoangvvo/gitflow-workflow-action@0.3.7
       with:
         develop_branch: "fake_develop"
         main_branch: "fake_main"
         version: ${{ inputs.version }}
+        version_increment: ${{ contains(github.ref, 'refs/heads/hotfix/') && 'patch' || ''   }}
         dry_run: ${{ inputs.dry_run }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
