@@ -15,7 +15,6 @@ on:
     types:
       - closed
     branches:
-      - 'fake_develop'
       - 'fake_main'
 
 jobs:
