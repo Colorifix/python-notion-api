@@ -15,7 +15,7 @@ on:
     types:
       - closed
     branches:
-      - 'fake_main'
+      - 'main'
 
 jobs:
   release_workflow:
@@ -26,8 +26,8 @@ jobs:
       id: gitflow-action
       uses: hoangvvo/gitflow-workflow-action@0.3.7
       with:
-        develop_branch: "fake_develop"
-        main_branch: "fake_main"
+        develop_branch: "develop"
+        main_branch: "main"
         version: ${{ inputs.version }}
         version_increment: ${{ contains(github.head_ref, 'hotfix/') && 'patch' || ''   }}
         dry_run: ${{ inputs.dry_run }}
@@ -37,7 +37,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ steps.gitflow-action.outputs.release_branch || 'fake_main' }}
+        ref: ${{ steps.gitflow-action.outputs.release_branch || 'main' }}
 
     - name: Install Python
       uses: actions/setup-python@v5
@@ -67,8 +67,7 @@ jobs:
     - name: Build and publish package
       if: ${{ !steps.gitflow-action.outputs.release_branch }}
       env:
-        TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN  }}
+        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN  }}
       run: |
-        poetry config repositories.testpypi https://test.pypi.org/legacy/
-        poetry config pypi-token.testpypi $TEST_PYPI_TOKEN
-        poetry publish --build --dry-run
+        poetry config pypi-token.pypi $PYPI_TOKEN
+        poetry publish --build
