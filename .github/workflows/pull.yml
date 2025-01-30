@@ -65,3 +65,6 @@ jobs:
         if: always()
         with:
           report_paths: 'junit/test-results.xml'
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
