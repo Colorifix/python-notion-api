@@ -6,8 +6,8 @@ Yet another client for Python Notion API...
 
 which brings you:
 
-    * Async calls allowing you to send multiple requests at once
-    * Pydantic models that wrap pages and databases for simple use
+* Async calls allowing you to send multiple requests at once
+* Pydantic models that wrap pages and databases for simple use
 
 ## Quick start
 
