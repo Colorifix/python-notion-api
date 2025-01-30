@@ -8,3 +8,5 @@ The key features of this implementation are:
 
 * Async calls allowing you to send multiple requests at once
 * [pydantic](https://docs.pydantic.dev/latest/) wrappers around Notion pages, properties and databases
+
+[Get started](get_started/install.md){ .md-button }
