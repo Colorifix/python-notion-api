@@ -2,13 +2,12 @@
 
 <img src="./img/logo.webp" alt="Logo" width="100"/>
 
-Object oriented API wrapper that uses Pydantic to convert Notion objects to Python objects and vice-versa.
+Yet another client for Python Notion API...
 
-Key features:
+which brings you:
 
-* Async client allowing you to send multiple requests at once
-* Pydantic models that wrap pages and databases for simple use
-
+    * Async calls allowing you to send multiple requests at once
+    * Pydantic models that wrap pages and databases for simple use
 
 ## Quick start
 
