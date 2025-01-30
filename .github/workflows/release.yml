@@ -33,7 +33,7 @@ jobs:
         dry_run: ${{ inputs.dry_run }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -43,7 +43,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-  
+
     - name: Install Poetry
       uses: abatilo/actions-poetry@v2
       with:
@@ -55,7 +55,7 @@ jobs:
       env:
         VERSION: ${{ steps.gitflow-action.outputs.version  }}
       run: poetry version $VERSION
-    
+
     # Committing bumped version to the release branch
     - name: Commit new version
       if: ${{ steps.gitflow-action.outputs.release_branch }}
