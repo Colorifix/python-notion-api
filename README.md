@@ -1,6 +1,6 @@
 # Python Notion API
 
-<img src="./img/logo.webp" alt="Logo" width="100"/>
+<img src="./docs/img/logo.webp" alt="Logo" width="100"/>
 
 Python Notion API implements a client for talking with Notion API.
 
