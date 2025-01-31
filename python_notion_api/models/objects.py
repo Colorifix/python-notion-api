@@ -150,6 +150,7 @@ class Page(NotionObject):
     cover: Optional[Union[FileObject, Dict[str, Union[str, FileObject]]]]
     properties: Dict[str, Dict]
     parent: ParentObject
+    archived: bool
 
 
 class Block(NotionObject):

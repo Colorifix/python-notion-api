@@ -35,9 +35,9 @@ class AsyncNotionAPI:
     def __init__(
         self,
         access_token: str,
-        api_version="2022-06-28",
-        page_limit=20,
-        rate_limit=(500, 200),
+        api_version: str = "2022-06-28",
+        page_limit: int = 20,
+        rate_limit: tuple[int, int] = (500, 200),
     ):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"
@@ -52,6 +52,7 @@ class AsyncNotionAPI:
 
     @property
     def request_headers(self):
+        """Gets request headers for making requests."""
         return {
             "Authorization": f"Bearer {self._access_token}",
             "Notion-Version": f"{self._api_version}",
@@ -60,31 +61,38 @@ class AsyncNotionAPI:
         }
 
     async def get_database(self, database_id: str) -> NotionDatabase:
-        """Wrapper for 'Retrieve a database' action.
+        """Gets Notion database.
 
         Args:
             database_id: Id of the database to fetch.
+
+        Returns:
+            A Notion database with the given id.
         """
         database = NotionDatabase(self, database_id)
         await database.reload()
 
         return database
 
-    async def get_page(self, page_id, page_cast=NotionPage) -> NotionPage:
-        """Wrapper for 'Retrieve a dpage' action.
+    async def get_page(
+        self, page_id: str, page_cast: type[NotionPage] = NotionPage
+    ) -> NotionPage:
+        """Gets Notion page.
 
         Args:
             page_id: Id of the database to fetch.
             page_cast: A subclass of a NotionPage. Allows custom
-            property retrieval
+                property retrieval.
+        Returns:
+            A Notion page with the given id.
         """
         page = page_cast(api=self, page_id=page_id)
         await page.reload()
 
         return page
 
-    async def get_block(self, block_id) -> NotionBlock:
-        """Wrapper for 'Retrieve a block' action.
+    async def get_block(self, block_id: str) -> NotionBlock:
+        """Gets Notion block.
 
         Args:
             block_id: Id of the block to fetch.
@@ -105,7 +113,7 @@ class AsyncNotionAPI:
         params: Dict[str, Any] = {},
         data: Optional[str] = None,
     ):
-        """Attempt a request to url.
+        """Attempts a request to url.
 
         Args:
             url: URL for the request.
@@ -130,14 +138,14 @@ class AsyncNotionAPI:
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
         retry_strategy: Optional[RetryStrategy] = None,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Main request handler.
 
         Should not be called directly, for internal use only.
 
         Args:
             request_type: Type of the http request to make.
-            endpoint: Endpoint of the request. Will be prepened with the
+            endpoint: Endpoint of the request. Will be prefixed with the
                 notion API base url.
             params: Params to pass to the request.
             data: Data to pass to the request.
@@ -207,7 +215,7 @@ class AsyncNotionAPI:
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
         retry_strategy: Any = None,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Wrapper for post requests.
 
         Should not be called directly, for internal use only.
@@ -232,7 +240,7 @@ class AsyncNotionAPI:
         endpoint: str,
         params: Dict[str, str] = {},
         cast_cls: Type[NotionObjectBase] = NotionObject,
-    ) -> Optional[NotionObject]:
+    ) -> NotionObject:
         """Wrapper for post requests.
 
         Should not be called directly, for internal use only.
@@ -279,14 +287,17 @@ class AsyncNotionAPI:
         )
 
     async def _post_iterate(
-        self, endpoint: str, data: Dict[str, str] = {}, page_limit: int = None
+        self,
+        endpoint: str,
+        data: Dict[str, Any] = {},
+        page_limit: Optional[int] = None,
     ) -> NotionObjectGenerator:
         """Wrapper for post requests where expected return type is Pagination.
 
         Should not be called directly, for internal use only.
 
         Args:
-            endpoint: Endpoint of the request. Will be prepened with the
+            endpoint: Endpoint of the request. Will be prefixed with the
                 notion API base url.
             data: Data to pass to the request.
         """
@@ -325,8 +336,8 @@ class AsyncNotionAPI:
     async def _get_iterate(
         self,
         endpoint: str,
-        params: Dict[str, str] = {},
-        page_limit: int = None,
+        params: Dict[str, Any] = {},
+        page_limit: Optional[int] = None,
     ) -> NotionObjectGenerator:
         """Wrapper for get requests where expected return type is Pagination.
 

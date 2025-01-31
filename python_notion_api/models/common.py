@@ -1,11 +1,8 @@
-import os
 from datetime import date, datetime
-from io import BytesIO
 from typing import Dict, List, Literal, Optional, Union
 
 from pydantic.v1 import BaseModel
 
-from python_notion_api.gdrive import GDrive
 from python_notion_api.models.fields import idField, typeField
 
 
@@ -22,38 +19,6 @@ class TextObject(BaseModel):
 class File(BaseModel):
     name: Optional[str]
     url: str
-
-    @classmethod
-    def from_file_path(
-        cls, file_path: str, parent_id: str, overwrite: bool = False
-    ):
-        gdrive = GDrive()
-        file = gdrive.add_media(
-            file=file_path,
-            parent_id=parent_id,
-            file_name=os.path.basename(file_path),
-            overwrite=overwrite,
-        )
-        return cls(name=file.get("title"), url=file.get("alternateLink"))
-
-    @classmethod
-    def from_stream(
-        cls,
-        stream: BytesIO,
-        parent_id: str,
-        file_name: str,
-        format: str,
-        overwrite: bool = False,
-    ):
-        gdrive = GDrive()
-        file = gdrive.add_media(
-            file=stream,
-            parent_id=parent_id,
-            file_name=file_name,
-            format=format,
-            overwrite=overwrite,
-        )
-        return cls(name=file.get("title"), url=file.get("alternateLink"))
 
 
 class ExternalFile(BaseModel):

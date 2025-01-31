@@ -17,7 +17,7 @@ class TestAsyncBlock:
         await block.reload()
         return block
 
-    def test_async_block(block):
+    async def test_async_block(block):
         assert block is not None
 
     async def test_add_children(self, block):

@@ -1,0 +1,40 @@
+site_name: Python Notion API
+repo_url: https://github.com/Colorifix/python-notion-api
+repo_name: Colorifix/python-notion-api
+theme:
+  logo: img/logo.webp
+  favicon: img/logo.webp
+  icon:
+    repo: fontawesome/brands/github-alt
+  name: material
+  palette:
+    primary: white
+  features:
+    - navigation.sections
+    - navigation.footer
+    - navigation.sections
+    - toc.integrate
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Get started:
+    - Installation: get_started/install.md
+    - Databases: get_started/databases.md
+    - Pages: get_started/pages.md
+    - Blocks: get_started/blocks.md
+  - API:
+    - Sync: api/sync.md
+    - Async: api/async.md
+
+plugins:
+  - mkdocstrings
+  - search
