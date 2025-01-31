@@ -36,7 +36,9 @@ jobs:
     name: Publish Documentation
     runs-on: ubuntu-latest
     if: startsWith(github.event.pull_request.head.ref, 'docs/')
-
+    permissions:
+      id-token: write
+      pages: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
