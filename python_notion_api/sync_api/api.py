@@ -65,7 +65,7 @@ class NotionPage:
         self.database = database
 
         if self._object is None:
-            self._object = self.load_object()
+            self.reload()
 
         self._alive: Optional[bool] = None
 
@@ -82,7 +82,10 @@ class NotionPage:
     @property
     def object(self) -> Page:
         if self._object is None:
-            self._object = self.load_object()
+            self.reload()
+
+        assert self._object is not None
+
         return self._object
 
     @property
@@ -323,12 +326,9 @@ class NotionPage:
 
         self._api._patch(endpoint=f"pages/{self._page_id}", data=data)
 
-    def load_object(self) -> Page:
+    def reload(self):
         """Reloads page from Notion."""
-        page = self._api._get(endpoint=f"pages/{self._page_id}")
-        assert page is not None
-        assert isinstance(page, Page)
-        return page
+        self._object = self._api._get(endpoint=f"pages/{self._page_id}")
 
     @property
     def properties(self) -> dict[str, PropertyValue]:

@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pytest import fixture, mark
 
@@ -15,7 +15,7 @@ from python_notion_api.models.sorts import Sort
 
 TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
 
-TEST_TITLE = f"API Test {datetime.utcnow().isoformat()}"
+TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5
 TEST_SELECT = "foo"

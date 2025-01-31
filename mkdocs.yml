@@ -1,7 +1,11 @@
 site_name: Python Notion API
+repo_url: https://github.com/Colorifix/python-notion-api
+repo_name: Colorifix/python-notion-api
 theme:
   logo: img/logo.webp
   favicon: img/logo.webp
+  icon:
+    repo: fontawesome/brands/github-alt
   name: material
   palette:
     primary: white
