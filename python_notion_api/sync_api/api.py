@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 from math import floor
-from typing import Any, Dict, Generator, List, Literal, Optional, Type, Union
+from typing import Any, Generator, Literal, Optional, Type, Union
 
 from loguru import logger
 from pydantic.v1 import BaseModel
@@ -23,6 +25,7 @@ from python_notion_api.models.objects import (
     Block,
     Database,
     NotionObjectBase,
+    Page,
     Pagination,
     User,
 )
@@ -40,25 +43,31 @@ class NotionPage:
     """
 
     class PatchRequest(BaseModel):
-        properties: Dict[str, PropertyValue]
+        properties: dict[str, PropertyValue]
 
     class AddBlocksRequest(BaseModel):
-        children: List[Block]
+        children: list[Block]
 
     # Map from property names to function names.
     # For use in subclasses
-    special_properties = {}
+    special_properties: dict[str, str] = {}
 
-    def __init__(self, api, page_id, obj=None, database=None):
+    def __init__(
+        self,
+        api: NotionAPI,
+        page_id: str,
+        obj: Optional[Page] = None,
+        database: Optional[NotionDatabase] = None,
+    ):
         self._api = api
         self._page_id = page_id
         self._object = obj
         self.database = database
 
         if self._object is None:
-            self.reload()
+            self._object = self.load_object()
 
-        self._alive = None
+        self._alive: Optional[bool] = None
 
         if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
@@ -67,17 +76,33 @@ class NotionPage:
             parent_id = self.parent.database_id
             self.database = self._api.get_database(parent_id)
 
-    def __getattr__(self, attr_key):
+    def __getattr__(self, attr_key: str):
         return getattr(self._object, attr_key)
 
     @property
+    def object(self) -> Page:
+        if self._object is None:
+            self._object = self.load_object()
+        return self._object
+
+    @property
     def page_id(self) -> str:
+        """Gets the page id.
+
+        Returns:
+            Id of the page.
+        """
         return self._page_id.replace("-", "")
 
     @property
-    def alive(self):
+    def alive(self) -> bool:
+        """Get the current archive status of the page.
+        Returns:
+            `True` if the page is not archived, `False` otherwise.
+        """
         if self._alive is None:
-            self._alive = not self._object.archived
+            self._alive = not self.object.archived
+
         return self._alive
 
     @alive.setter
@@ -87,7 +112,7 @@ class NotionPage:
         self._alive = val
 
     def _get_prop_name(self, prop_key: str) -> Optional[str]:
-        """Gets propetry name from property key.
+        """Gets property name from property key.
 
         Args:
             prop_key: Either a property name or property id.
@@ -95,7 +120,7 @@ class NotionPage:
         Returns:
             Property name or `None` if key is invalid.
         """
-        _properties = self._object.properties
+        _properties = self.object.properties
         prop_name = next(
             (
                 key
@@ -107,11 +132,11 @@ class NotionPage:
 
         return prop_name
 
-    def add_blocks(self, blocks: List[Block]) -> BlockIterator:
-        """Wrapper for add new blocks to an existing page.
+    def add_blocks(self, blocks: list[Block]) -> BlockIterator:
+        """Adds new blocks to an existing page.
 
         Args:
-            blocks: List of Blocks to add
+            blocks: list of Blocks to add
 
         Returns:
             Iterator of blocks is returned.
@@ -125,14 +150,20 @@ class NotionPage:
         new_blocks = self._api._patch(
             endpoint=f"blocks/{self.page_id}/children", data=data
         )
+
+        assert new_blocks is not None
+
         return BlockIterator(iter(new_blocks.results))
 
-    def get_blocks(self, page_limit: int = None) -> BlockIterator:
-        """
-        Get an iterater of all blocks in the page
+    def get_blocks(self, page_limit: Optional[int] = None) -> BlockIterator:
+        """Gets all blocks in the page.
+
+        Args:
+            page_limit: Limit the number of blocks to return. If `None`, will
+                return all blocks.
 
         Returns:
-            Iterator of blocks is returned.
+            Iterator of the page blocks.
         """
 
         generator = self._api._get_iterate(
@@ -145,19 +176,20 @@ class NotionPage:
         prop_key: str,
         cache: bool = True,
         safety_off: bool = False,
-        page_limit: int = None,
-    ) -> Union[PropertyValue, PropertyItemIterator]:
-        """
+        page_limit: Optional[int] = None,
+    ) -> Union[PropertyValue, PropertyItemIterator, None]:
+        """Gets a single page property.
+
         First checks if the property is 'special', if so, will call the special
         function to get that property value.
         If not, gets the property through the api.
 
         Args:
             prop_key: Name or id of the property to retrieve.
-            cache: Boolean to decide whether to return the info from the page
-                or query the API again.
+            cache: If `True` and the property has been retrieved before, will return a cached value.
+                Use `False` to force a new API call.
             safety_off: If `True` will use cached values of rollups and
-                formulas
+                formulas.
         """
         if prop_key in self.special_properties:
             # For subclasses of NotionPage
@@ -181,16 +213,16 @@ class NotionPage:
         prop_key: str,
         cache: bool = True,
         safety_off: bool = False,
-        page_limit: int = None,
-    ) -> Union[PropertyValue, PropertyItemIterator]:
+        page_limit: Optional[int] = None,
+    ) -> Union[PropertyValue, PropertyItemIterator, None]:
         """Wrapper for 'Retrieve a page property item' action.
 
         Will return whatever is retrieved from the API, no special cases.
 
         Args:
             prop_key: Name or id of the property to retrieve.
-            cache: Boolean to decide whether to return the info from the page
-                or query the API again.
+            cache: If `True` and the property has been retrieved before, will return a cached value.
+                Use `False` to force a new API call.
             safety_off: If `True` will use cached values of rollups and
                 formulas
         """
@@ -199,7 +231,7 @@ class NotionPage:
         if prop_name is None:
             raise ValueError(f"Invalid property  name {prop_name}")
 
-        prop = self._object.properties[prop_name]
+        prop = self.object.properties[prop_name]
 
         obj = PropertyItem.from_obj(prop)
 
@@ -228,10 +260,16 @@ class NotionPage:
 
         elif isinstance(ret, PropertyItem):
             return PropertyValue.from_property_item(ret)
+        else:
+            return None
 
-    def _archive(self, archive_status=True) -> None:
-        """Wrapper for 'Archive page' action if archive_status is True,
+    def _archive(self, archive_status: bool = True) -> None:
+        """Wrapper for 'Archive page' action.
+        If archive_status is True,
         or 'Restore page' action if archive_status is False.
+
+        Args:
+            archive_status: `True` to archive the page, `False` to restore it.
         """
         self._api._patch(
             endpoint=f"pages/{self._page_id}",
@@ -251,7 +289,7 @@ class NotionPage:
         if prop_name is None:
             raise ValueError(f"Unknown property '{prop_name}'")
 
-        prop_type = self._object.properties[prop_name]["type"]
+        prop_type = self.object.properties[prop_name]["type"]
 
         value = generate_value(prop_type, value)
         request = NotionPage.PatchRequest(properties={prop_name: value})
@@ -260,7 +298,7 @@ class NotionPage:
 
         self._api._patch(endpoint=f"pages/{self._page_id}", data=data)
 
-    def update(self, properties: Dict[str, Any]) -> None:
+    def update(self, properties: dict[str, Any]) -> None:
         """Update page with a dictionary of new values.
 
         Args:
@@ -274,7 +312,7 @@ class NotionPage:
             if prop_name is None:
                 raise ValueError(f"Unknown property '{prop_name}'")
 
-            prop_type = self._object.properties[prop_name]["type"]
+            prop_type = self.object.properties[prop_name]["type"]
 
             value = generate_value(prop_type, value)
             values[prop_name] = value
@@ -285,38 +323,42 @@ class NotionPage:
 
         self._api._patch(endpoint=f"pages/{self._page_id}", data=data)
 
-    def reload(self):
+    def load_object(self) -> Page:
         """Reloads page from Notion."""
-        self._object = self._api._get(endpoint=f"pages/{self._page_id}")
+        page = self._api._get(endpoint=f"pages/{self._page_id}")
+        assert page is not None
+        assert isinstance(page, Page)
+        return page
 
     @property
-    def properties(self) -> Dict[str, PropertyValue]:
+    def properties(self) -> dict[str, PropertyValue]:
         """Returns all properties of the page."""
         return {
             prop_name: self.get(prop_name)
-            for prop_name in self._object.properties
+            for prop_name in self.object.properties
         }
 
     def to_dict(
         self,
         include_rels: bool = True,
         rels_only=False,
-        properties: Optional[Union[str, List]] = None,
-    ) -> Dict[str, Union[str, List]]:
-        """Returns all properties of the page as simple values.
+        properties: Optional[Union[str, list]] = None,
+    ) -> dict[str, Union[str, list]]:
+        """Returns all properties of the page as a dict of builtin type values.
 
         Args:
             include_rels: Include relations.
             rels_only: Return relations only.
-            properties: List of properties to return. If None, will
-            get values for all properties.
+            properties: List of properties to return. If `None`, will
+                get values for all properties.
         """
         if properties is None:
-            properties = self._object.properties
+            properties = self.object.properties
         vals = {}
         for prop_name in properties:
             prop = self.get(prop_name)
-
+            if prop is None:
+                continue
             if prop.property_type == "relation":
                 if include_rels:
                     vals[prop_name] = prop.value
@@ -327,37 +369,47 @@ class NotionPage:
 
 
 class NotionBlock:
-    """wrapper for notion block object
+    """Wrapper for a Notion block object.
 
     Args:
         api: Instance of the NotionAPI.
         block_id: Id of the block.
     """
 
-    def __init__(self, api, block_id):
+    def __init__(self, api: NotionAPI, block_id: str):
         self._api = api
         self._block_id = block_id
 
     @property
     def block_id(self) -> str:
+        """Gets block id.
+
+        Returns:
+            Id of the block.
+        """
         return self._block_id.replace("-", "")
 
-    def get_child_blocks(self, page_limit: int = None) -> BlockIterator:
-        """
-        Get an iterater of all blocks in the block
-        Returns:
+    def get_child_blocks(
+        self, page_limit: Optional[int] = None
+    ) -> BlockIterator:
+        """Gets all child blocks in the block.
 
+        Returns:
+            An iterater of all blocks in the block
         """
         generator = self._api._get_iterate(
             endpoint=f"blocks/{self._block_id}/children", page_limit=page_limit
         )
         return BlockIterator(generator)
 
-    def add_child_block(self, content: List[Block]) -> BlockIterator:
-        """Wrapper for add new blocks to an existing page.
+    def add_child_block(self, content: list[Block]) -> BlockIterator:
+        """Adds new blocks as children.
 
         Args:
             content: Content of the new block.
+
+        Returns:
+            An iterator of the newly created blocks.
         """
         data = {
             "children": [
@@ -368,21 +420,30 @@ class NotionBlock:
         new_blocks = self._api._patch(
             endpoint=f"blocks/{self.block_id}/children", data=json.dumps(data)
         )
+
+        assert new_blocks is not None
+
         return BlockIterator(iter(new_blocks.results))
 
     def set(self, block: Block) -> Block:
-        """
-        Updates the content of a Block. The entire content is replaced.
+        """Updates the content of a Block.
+
+        The entire content is replaced.
+
         Args:
             block: Block with the new values.
 
         Returns:
-
+            New block with the updated content.
         """
         data = block.dict(by_alias=True, exclude_unset=True)
+
         new_block = self._api._patch(
             endpoint=f"blocks/{self.block_id}", data=json.dumps(data)
         )
+
+        assert new_block is not None
+
         return new_block
 
 
@@ -396,13 +457,13 @@ class NotionDatabase:
 
     class CreatePageRequest(BaseModel):
         parent: ParentObject
-        properties: Dict[str, PropertyValue]
+        properties: dict[str, PropertyValue]
         cover: Optional[FileObject]
 
-    def __init__(self, api, database_id):
+    def __init__(self, api: NotionAPI, database_id: str):
         self._api = api
         self._database_id = database_id
-        self._object = self._api._get(
+        self._object: Optional[Database] = self._api._get(
             endpoint=f"databases/{self._database_id}", cast_cls=Database
         )
 
@@ -417,27 +478,57 @@ class NotionDatabase:
 
     @property
     def database_id(self) -> str:
+        """Gets database id.
+
+        Returns:
+            Id of the database.
+        """
         return self._database_id.replace("-", "")
+
+    @property
+    def title(self) -> str:
+        """Gets title of the database."""
+        return self._title
+
+    @property
+    def properties(self) -> dict[str, NotionPropertyConfiguration]:
+        """Gets all property configurations of the database."""
+        return self._properties
+
+    @property
+    def relations(self) -> dict[str, RelationPropertyConfiguration]:
+        """Gets all property configurations of the database that are
+        relations.
+        """
+        return {
+            key: val
+            for key, val in self._properties.items()
+            if isinstance(val, RelationPropertyConfiguration)
+        }
 
     def query(
         self,
         filters: Optional[FilterItem] = None,
-        sorts: Optional[List[Sort]] = None,
+        sorts: Optional[list[Sort]] = None,
         cast_cls=NotionPage,
-        page_limit: int = None,
+        page_limit: Optional[int] = None,
     ) -> Generator[NotionPage, None, None]:
-        """A wrapper for 'Query a database' action.
+        """Queries the database.
 
-        Retrieves all pages belonging to the database.
+        Retrieves all pages belonging to the database that satisfy the given filters
+        in the order specified by the sorts.
 
         Args:
-            filters:
-            sorts:
+            filters: Filters to apply to the query.
+            sorts: Sorts to apply to the query.
             cast_cls: A subclass of a NotionPage. Allows custom
-            property retrieval
+            property retrieval.
 
+        Returns:
+            Generator of NotionPage objects.
         """
-        data = {}
+        data: dict[str, Any] = {}
+
         if filters is not None:
             filters = filters.dict(by_alias=True, exclude_unset=True)
             data["filter"] = filters
@@ -457,56 +548,13 @@ class NotionDatabase:
                 api=self._api, database=self, page_id=item.page_id, obj=item
             )
 
-    @property
-    def title(self) -> str:
-        """Returns a title of the database."""
-        return self._title
-
-    @property
-    def properties(self) -> Dict[str, NotionPropertyConfiguration]:
-        """Returns all property configurations of the database."""
-        return self._properties
-
-    @property
-    def relations(self) -> Dict[str, RelationPropertyConfiguration]:
-        """Returns all property configurations of the database that are
-        relations.
-        """
-        return {
-            key: val
-            for key, val in self._properties.items()
-            if isinstance(val, RelationPropertyConfiguration)
-        }
-
-    def get_property(self, prop_config: Any, prop_value: str) -> Any:
-        """Create property for a given property configuration."""
-
-        if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
-            type_ = prop_value.property_type
-
-            if type_ != prop_config.config_type:
-                # Have a mismatch between the property type and the
-                # given item
-                raise TypeError(
-                    f"Item {prop_value.__class__} given as "
-                    f"the value for property "
-                    f"{prop_config.__class__}"
-                )
-            new_prop = prop_value
-
-        else:
-            new_prop = prop_config.create_property(prop_value)
-
-        return new_prop
-
     def create_page(
         self,
-        properties: Dict[str, Any] = {},
+        properties: dict[str, Any] = {},
         cover_url: Optional[str] = None,
     ) -> NotionPage:
         """Creates a new page in the Database and updates the new page with
         the properties.
-        Status, Files or any of the advanced properties are not yet supported.
 
         Args:
             properties: Dictionary of property names and values. Value types
@@ -514,6 +562,9 @@ class NotionDatabase:
             (e.g. string, float) or an object (e.g. SelectValue,
             NumberPropertyItem)
             cover: URL of an image for the page cover.
+
+        Returns:
+            A new page.
         """
 
         validated_properties = {}
@@ -542,6 +593,8 @@ class NotionDatabase:
             "pages", data=data, retry_strategy=self._api.post_retry_strategy
         )
 
+        assert new_page is not None
+
         return NotionPage(
             api=self._api,
             page_id=new_page.page_id,
@@ -556,10 +609,14 @@ class NotionAPI:
     Args:
         access_token: Notion access token
         api_version: Version of the notion API
+        page_limit: Maximum number of results per request.
     """
 
     def __init__(
-        self, access_token: str, api_version="2022-06-28", page_limit=20
+        self,
+        access_token: str,
+        api_version: str = "2022-06-28",
+        page_limit: int = 20,
     ):
         self._access_token = access_token
         self._base_url = "https://api.notion.com/v1/"
@@ -585,7 +642,7 @@ class NotionAPI:
         self,
         request_type: Literal["get", "post", "patch"],
         endpoint: str = "",
-        params: Dict[str, Any] = {},
+        params: dict[str, Any] = {},
         data: Optional[str] = None,
         cast_cls: Type[NotionObjectBase] = NotionObject,
         retry_strategy: Retry = None,
@@ -602,6 +659,9 @@ class NotionAPI:
             data: Data to pass to the request.
             cast_cls: A NotionObjectBase class to auto-cast the response of the
                 request to.
+
+        Returns:
+            Retrieved NotionObject or `None` if the request failed.
         """
         url = self._base_url + endpoint
 
@@ -629,6 +689,7 @@ class NotionAPI:
                 f"Request to {url} failed:"
                 f"\n{response.status}\n{decoded_data}"
             )
+            return None
 
     def _post(
         self,
@@ -647,6 +708,9 @@ class NotionAPI:
             data: Data to pass to the request.
             cast_cls: A NotionObjectBase class to auto-cast the response of the
                 request to.
+
+        Returns:
+            Retrieved NotionObject or `None` if the request failed.
         """
         return self._request(
             request_type="post",
@@ -659,7 +723,7 @@ class NotionAPI:
     def _get(
         self,
         endpoint: str,
-        params: Dict[str, str] = {},
+        params: dict[str, str] = {},
         cast_cls: Type[NotionObjectBase] = NotionObject,
     ) -> Optional[NotionObject]:
         """Wrapper for post requests.
@@ -672,6 +736,9 @@ class NotionAPI:
             params: Params to pass to the request.
             cast_cls: A NotionObjectBase class to auto-cast the response of the
                 request to.
+
+        Returns:
+            Retrieved NotionObject or `None` if the request failed.
         """
         return self._request(
             request_type="get",
@@ -683,10 +750,10 @@ class NotionAPI:
     def _patch(
         self,
         endpoint: str,
-        params: Dict[str, str] = {},
+        params: dict[str, str] = {},
         data: Optional[str] = None,
         cast_cls=NotionObject,
-    ) -> NotionObject:
+    ) -> Optional[NotionObject]:
         """Wrapper for patch requests.
 
         Should not be called directly, for internal use only.
@@ -698,6 +765,9 @@ class NotionAPI:
             data: Data to pass to the request.
             cast_cls: A NotionObjectBase class to auto-cast the response of the
                 request to.
+
+        Returns:
+            Retrieved NotionObject or `None` if the request failed.
         """
         return self._request(
             request_type="patch",
@@ -710,18 +780,21 @@ class NotionAPI:
     def _post_iterate(
         self,
         endpoint: str,
-        data: Dict[str, str] = {},
+        data: dict[str, str] = {},
         retry_strategy: Retry = None,
-        page_limit: int = None,
+        page_limit: Optional[int] = None,
     ) -> Generator[PropertyItem, None, None]:
         """Wrapper for post requests where expected return type is Pagination.
 
         Should not be called directly, for internal use only.
 
         Args:
-            endpoint: Endpoint of the request. Will be prepened with the
-                notion API base url.
+            endpoint: Endpoint of the request. Will be prefixed with the
+                Notion API base url.
             data: Data to pass to the request.
+
+        Returns:
+            Generator yielding PropertyItem objects.
         """
         has_more = True
         cursor = None
@@ -741,6 +814,8 @@ class NotionAPI:
                         retry_strategy=retry_strategy,
                     )
 
+                    assert response is not None
+
                     for item in response.results:
                         yield item
 
@@ -757,17 +832,20 @@ class NotionAPI:
     def _get_iterate(
         self,
         endpoint: str,
-        params: Dict[str, str] = {},
-        page_limit: int = None,
-    ) -> Generator[PropertyItem, None, None]:
+        params: dict[str, str] = {},
+        page_limit: Optional[int] = None,
+    ) -> Generator[tuple[Any, Any], None, None]:
         """Wrapper for get requests where expected return type is Pagination.
 
         Should not be called directly, for internal use only.
 
         Args:
-            endpoint: Endpoint of the request. Will be prepened with the
+            endpoint: Endpoint of the request. Will be prefixed with the
                 notion API base url.
             params: Params to pass to the request.
+
+        Returns:
+            Generator yielding PropertyItem objects.
         """
         has_more = True
         cursor = None
@@ -782,6 +860,8 @@ class NotionAPI:
             while page_size > 0:
                 try:
                     response = self._get(endpoint=endpoint, params=params)
+
+                    assert response is not None
 
                     if hasattr(response, "property_item"):
                         # Required for rollups
@@ -804,30 +884,46 @@ class NotionAPI:
                     params.update({"page_size": page_size})
 
     def get_database(self, database_id: str) -> NotionDatabase:
-        """Wrapper for 'Retrieve a database' action.
+        """Gets Notion database.
 
         Args:
             database_id: Id of the database to fetch.
+
+        Returns:
+            A Notion database with the given id.
         """
         return NotionDatabase(self, database_id)
 
-    def get_page(self, page_id, page_cast=NotionPage) -> NotionPage:
-        """Wrapper for 'Retrieve a dpage' action.
+    def get_page(
+        self, page_id: str, page_cast: Type[NotionPage] = NotionPage
+    ) -> NotionPage:
+        """Gets Notion page.
 
         Args:
             page_id: Id of the database to fetch.
             page_cast: A subclass of a NotionPage. Allows custom
-            property retrieval
+                property retrieval.
+
+        Returns:
+            A Notion page with the given id casted to the provided class.
         """
         return page_cast(self, page_id)
 
     def get_block(self, block_id) -> NotionBlock:
-        """Wrapper for 'Retrieve a block' action.
+        """Gets Notion block.
 
         Args:
             block_id: Id of the block to fetch.
+
+        Returns:
+            A Notion block with the given id.
         """
         return NotionBlock(self, block_id)
 
     def me(self) -> User:
-        return self._get("users/me")
+        user = self._get("users/me")
+
+        assert user is not None
+        assert isinstance(user, User)
+
+        return user

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
 
 from pydantic.v1 import BaseModel
 
@@ -14,6 +14,9 @@ from python_notion_api.models.objects import Database
 from python_notion_api.models.sorts import Sort
 from python_notion_api.models.values import PropertyValue, generate_value
 
+if TYPE_CHECKING:
+    from python_notion_api.async_api.api import AsyncNotionAPI
+
 
 class NotionDatabase:
     """Wrapper for a Notion database object.
@@ -28,7 +31,7 @@ class NotionDatabase:
         properties: Dict[str, PropertyValue]
         cover: Optional[FileObject]
 
-    def __init__(self, api, database_id):
+    def __init__(self, api: "AsyncNotionAPI", database_id: str):
         self._api = api
         self._database_id = database_id
         self._object = None
@@ -41,9 +44,11 @@ class NotionDatabase:
 
     @property
     def database_id(self) -> str:
+        """Gets the database id."""
         return self._database_id.replace("-", "")
 
     async def reload(self):
+        """Reloads the database from Notion."""
         self._object = await self._api._get(
             endpoint=f"databases/{self._database_id}", cast_cls=Database
         )
@@ -63,19 +68,23 @@ class NotionDatabase:
         sorts: Optional[List[Sort]] = None,
         page_limit: Optional[int] = None,
         cast_cls=NotionPage,
-    ) -> Generator[NotionPage, None, None]:
-        """A wrapper for 'Query a database' action.
+    ) -> AsyncGenerator[NotionPage, None]:
+        """Queries the database.
 
-        Retrieves all pages belonging to the database.
+        Retrieves all pages belonging to the database that satisfy the given filters
+        in the order specified by the sorts.
 
         Args:
-            filters:
-            sorts:
+            filters: Filters to apply to the query.
+            sorts: Sorts to apply to the query.
             cast_cls: A subclass of a NotionPage. Allows custom
-            property retrieval
+            property retrieval.
 
+        Returns:
+            Generator of NotionPage objects.
         """
-        data = {}
+        data: dict[str, Any] = {}
+
         if filters is not None:
             filters = filters.dict(by_alias=True, exclude_unset=True)
             data["filter"] = filters
@@ -97,21 +106,24 @@ class NotionDatabase:
     @property
     @ensure_loaded
     def title(self) -> str:
-        """Returns a title of the database."""
+        """Gets title of the database."""
+        assert self._title is not None
         return self._title
 
     @property
     @ensure_loaded
     def properties(self) -> Dict[str, NotionPropertyConfiguration]:
-        """Returns all property configurations of the database."""
+        """Gets all property configurations of the database."""
+        assert self._properties is not None
         return self._properties
 
     @property
     @ensure_loaded
     def relations(self) -> Dict[str, RelationPropertyConfiguration]:
-        """Returns all property configurations of the database that are
+        """Gets all property configurations of the database that are
         relations.
         """
+        assert self._properties is not None
         return {
             key: val
             for key, val in self._properties.items()
@@ -125,14 +137,16 @@ class NotionDatabase:
     ) -> NotionPage:
         """Creates a new page in the Database and updates the new page with
         the properties.
-        Status, Files or any of the advanced properties are not yet supported.
 
         Args:
             properties: Dictionary of property names and values. Value types
             will depend on the property type. Can be the raw value
             (e.g. string, float) or an object (e.g. SelectValue,
             NumberPropertyItem)
-            cover: URL of an image for the page cover
+            cover: URL of an image for the page cover.
+
+        Returns:
+            A new page.
         """
 
         validated_properties = {}
