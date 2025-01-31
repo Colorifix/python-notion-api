@@ -10,7 +10,6 @@ from python_notion_api.async_api.notion_database import NotionDatabase
 from python_notion_api.async_api.notion_page import NotionPage
 
 __all__ = [
-    "NotionAPIBase",
     "AsyncNotionAPI",
     "NotionBlock",
     "NotionPage",

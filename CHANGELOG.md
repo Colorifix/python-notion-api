@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.0.0]  - 2025/01/31
+
+- First public release
+
 ## [0.10.0] - 2024/12/20
 
 ### Added

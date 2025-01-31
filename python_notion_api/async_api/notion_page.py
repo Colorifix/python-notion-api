@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic.v1 import BaseModel
 
@@ -9,13 +9,16 @@ from python_notion_api.async_api.iterators import (
     create_property_iterator,
 )
 from python_notion_api.async_api.utils import ensure_loaded
-from python_notion_api.models.objects import Block, Pagination
+from python_notion_api.models.objects import Block, Database, Page, Pagination
 from python_notion_api.models.properties import PropertyItem
 from python_notion_api.models.values import PropertyValue, generate_value
 
+if TYPE_CHECKING:
+    from python_notion_api.async_api.api import AsyncNotionAPI
+
 
 class NotionPage:
-    """Wrapper for a notion page object.
+    """Wrapper for a Notion page object.
 
     Args:
         api: Instance of the NotionAPI.
@@ -23,16 +26,22 @@ class NotionPage:
     """
 
     class PatchRequest(BaseModel):
-        properties: Dict[str, PropertyValue]
+        properties: dict[str, PropertyValue]
 
     class AddBlocksRequest(BaseModel):
-        children: List[Block]
+        children: list[Block]
 
     # Map from property names to function names.
     # For use in subclasses
-    special_properties = {}
+    special_properties: dict[str, str] = {}
 
-    def __init__(self, api, page_id, obj=None, database=None):
+    def __init__(
+        self,
+        api: "AsyncNotionAPI",
+        page_id: str,
+        obj: Optional[Page] = None,
+        database: Optional[Database] = None,
+    ):
         self._api = api
         self._page_id = page_id
         self._object = obj
@@ -47,27 +56,38 @@ class NotionPage:
                 self.database = await self._api.get_database(parent_id)
 
     @ensure_loaded
-    def __getattr__(self, attr_key):
+    def __getattr__(self, attr_key: str):
         return getattr(self._object, attr_key)
 
     @property
     def page_id(self) -> str:
+        """Returns the page id."""
         return self._page_id.replace("-", "")
 
     @property
     @ensure_loaded
-    def is_alive(self):
+    def is_alive(self) -> bool:
+        """Checks if the page is archived.
+
+        Returns:
+            `True` if the page is not archived, False otherwise.
+        """
+        assert self._object is not None
         return not self._object.archived
 
     async def archive(self):
+        """Archives the page"""
         await self._archive(True)
 
     async def unarchive(self):
+        """Unarchives the page"""
         await self._archive(False)
 
     async def _archive(self, archive_status=True) -> None:
-        """Wrapper for 'Archive page' action if archive_status is True,
-        or 'Restore page' action if archive_status is False.
+        """Changes archive status of the page.
+
+        Args:
+            archive_status: Whether to archive or unarchive the page.
         """
         await self._api._patch(
             endpoint=f"pages/{self._page_id}",
@@ -78,17 +98,20 @@ class NotionPage:
     async def set(
         self, prop_key: str, value: Any, reload_page: bool = False
     ) -> None:
-        """Wrapper for 'Update page' action.
+        """Sets a single page property.
 
         Args:
-            prop_key: Name or id of the property to update
-            value: A new value of the property
+            prop_key: Name or id of the property to update.
+            value: A new value of the property.
+            reload_page: Whether to reload the page after updating the property.
         """
 
         prop_name = self._get_prop_name(prop_key=prop_key)
 
         if prop_name is None:
             raise ValueError(f"Unknown property '{prop_name}'")
+
+        assert self._object is not None
 
         prop_type = self._object.properties[prop_name]["type"]
 
@@ -104,13 +127,14 @@ class NotionPage:
 
     @ensure_loaded
     async def update(
-        self, properties: Dict[str, Any], reload_page: bool = False
+        self, properties: dict[str, Any], reload_page: bool = False
     ) -> None:
-        """Update page with a dictionary of new values.
+        """Updates the page with a dictionary of new values.
 
         Args:
             properties: A dictionary mapping property keys to new
                 values.
+            reload_page: Whether to reload the page after updating the properties.
         """
         values = {}
         for prop_key, value in properties.items():
@@ -118,6 +142,8 @@ class NotionPage:
 
             if prop_name is None:
                 raise ValueError(f"Unknown property '{prop_name}'")
+
+            assert self._object is not None
 
             prop_type = self._object.properties[prop_name]["type"]
 
@@ -136,8 +162,9 @@ class NotionPage:
     @ensure_loaded
     async def get_properties(
         self, raw: bool = False
-    ) -> Dict[str, PropertyValue]:
-        """Returns all properties of the page."""
+    ) -> dict[str, PropertyValue]:
+        """Gets all properties of the page."""
+        assert self._object is not None
         return {
             prop_name: await self.get(prop_name, raw=raw)
             for prop_name in self._object.properties
@@ -148,19 +175,21 @@ class NotionPage:
         self,
         include_rels: bool = True,
         rels_only=False,
-        properties: Optional[Union[str, List]] = None,
-    ) -> Dict[str, Union[str, List]]:
-        """Returns all properties of the page as simple values.
+        properties: Optional[dict] = None,
+    ) -> dict[str, Union[str, list]]:
+        """ "Returns all properties of the page as a dict of builtin type values.
 
         Args:
             include_rels: Include relations.
             rels_only: Return relations only.
-            properties: List of properties to return. If None, will
-            get values for all properties.
+            properties: List of properties to return. If `None`, will
+                get values for all properties.
         """
         if properties is None:
+            assert self._object is not None
             properties = self._object.properties
         vals = {}
+
         for prop_name in properties:
             prop = await self.get(prop_name, raw=True)
 
@@ -177,14 +206,14 @@ class NotionPage:
                     vals[prop_name] = value
         return vals
 
-    async def add_blocks(self, blocks: List[Block]) -> AsyncBlockIterator:
-        """Wrapper for add new blocks to an existing page.
+    async def add_blocks(self, blocks: list[Block]) -> AsyncBlockIterator:
+        """Adds new blocks to the page.
 
         Args:
-            blocks: List of Blocks to add
+            blocks: List of Blocks to add.
 
         Returns:
-            Iterator of blocks is returned.
+            Iterator of new blocks.
         """
         request = NotionPage.AddBlocksRequest(children=blocks)
 
@@ -198,8 +227,7 @@ class NotionPage:
         return AsyncBlockIterator(iter(new_blocks.results))
 
     async def get_blocks(self) -> AsyncBlockIterator:
-        """
-        Get an iterater of all blocks in the page
+        """Gets all blocks in the page.
 
         Returns:
             Iterator of blocks is returned.
@@ -217,18 +245,19 @@ class NotionPage:
         cache: bool = True,
         safety_off: bool = False,
         raw: bool = False,
-    ) -> Union[PropertyValue, AsyncPropertyItemIterator]:
-        """
+    ) -> Union[PropertyValue, AsyncPropertyItemIterator, None]:
+        """Gets a single page property.
+
         First checks if the property is 'special', if so, will call the special
         function to get that property value.
         If not, gets the property through the api.
 
         Args:
             prop_key: Name or id of the property to retrieve.
-            cache: Boolean to decide whether to return the info from the page
-                or query the API again.
+            cache: If `True` and the property has been retrieved before, will return a cached value.
+                Use `False` to force a new API call.
             safety_off: If `True` will use cached values of rollups and
-                formulas
+                formulas.
         """
         if prop_key in self.special_properties:
             # For subclasses of NotionPage
@@ -253,7 +282,7 @@ class NotionPage:
 
     async def _direct_get(
         self, prop_key: str, cache: bool = True, safety_off: bool = False
-    ) -> Union[PropertyValue, AsyncPropertyItemIterator]:
+    ) -> Union[PropertyValue, AsyncPropertyItemIterator, None]:
         """Wrapper for 'Retrieve a page property item' action.
 
         Will return whatever is retrieved from the API, no special cases.
@@ -269,6 +298,8 @@ class NotionPage:
 
         if prop_name is None:
             raise ValueError(f"Invalid property key '{prop_key}'")
+
+        assert self._object is not None
 
         prop = self._object.properties[prop_name]
 
@@ -298,6 +329,8 @@ class NotionPage:
 
         elif isinstance(ret, PropertyItem):
             return PropertyValue.from_property_item(ret)
+        else:
+            return None
 
     def _get_prop_name(self, prop_key: str) -> Optional[str]:
         """Gets propetry name from property key.
@@ -308,6 +341,7 @@ class NotionPage:
         Returns:
             Property name or `None` if key is invalid.
         """
+        assert self._object is not None
         _properties = self._object.properties
         prop_name = next(
             (
