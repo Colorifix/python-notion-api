@@ -1,3 +1,5 @@
+[![docs](https://img.shields.io/badge/docs-blue)](https://colorifix.github.io/python-notion-api/) ![PyPI - Version](https://img.shields.io/pypi/v/python_notion_api)
+
 # Python Notion API
 
 <img src="./docs/img/logo.webp" alt="Logo" width="100"/>
