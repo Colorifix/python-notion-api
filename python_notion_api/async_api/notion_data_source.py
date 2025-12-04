@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator, List, Optional, TYPE_CHECKING
+from typing import Any, Generator, Optional, TYPE_CHECKING
 
 from pydantic.v1 import BaseModel
 
@@ -28,7 +28,7 @@ class NotionDataSource:
 
     class CreatePageRequest(BaseModel):
         parent: ParentObject
-        properties: Dict[str, PropertyValue]
+        properties: dict[str, PropertyValue]
         cover: Optional[FileObject]
 
     def __init__(self, api: "AsyncNotionAPI", data_source_id: str):
@@ -66,7 +66,7 @@ class NotionDataSource:
     async def query(
         self,
         filters: Optional[FilterItem] = None,
-        sorts: Optional[List[Sort]] = None,
+        sorts: Optional[list[Sort]] = None,
         page_limit: Optional[int] = None,
         cast_cls=NotionPage,
     ) -> Generator[NotionPage, None, None]:
@@ -108,13 +108,13 @@ class NotionDataSource:
 
     @property
     @ensure_loaded
-    def properties(self) -> Dict[str, NotionPropertyConfiguration]:
+    def properties(self) -> dict[str, NotionPropertyConfiguration]:
         """Get all property configurations of the data source."""
         return self._properties
 
     @property
     @ensure_loaded
-    def relations(self) -> Dict[str, RelationPropertyConfiguration]:
+    def relations(self) -> dict[str, RelationPropertyConfiguration]:
         """Get all property configurations of the data source that are
         relations.
         """
@@ -126,7 +126,7 @@ class NotionDataSource:
 
     async def create_page(
         self,
-        properties: Dict[str, Any] = {},
+        properties: dict[str, Any] = {},
         cover_url: Optional[str] = None,
     ) -> NotionPage:
         """Creates a new page in the Data Source and updates the new page with
