@@ -14,7 +14,8 @@ from python_notion_api.models.filters import (
 from python_notion_api.models.sorts import Sort
 
 TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
-
+TEST_DS = "924fbc0cb38f4a09ac2f967266f5c743"
+TEST_DS2 = "28d751c8a89180ed80c8000b05bd4bb1"
 TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5
@@ -40,16 +41,24 @@ def database(api):
     return api.get_database(database_id=TEST_DB)
 
 
+@fixture
+def data_source(api):
+    return api.get_data_source(data_source_id=TEST_DS)
+
+
 class TestCore:
     def test_database_id(self, database):
         assert database.database_id == TEST_DB
 
-    def test_create_empty_page(self, database):
-        new_page = database.create_page()
+    def test_get_data_source(self, data_source):
+        assert data_source.data_source_id == TEST_DS
+
+    def test_create_empty_page(self, data_source):
+        new_page = data_source.create_page()
         assert new_page is not None
 
-    def test_create_empty_page_with_cover(self, database, cover_url):
-        new_page = database.create_page(cover_url=cover_url)
+    def test_create_empty_page_with_cover(self, data_source, cover_url):
+        new_page = data_source.create_page(cover_url=cover_url)
         assert new_page is not None
 
     def test_get_page(self, api, example_page_id):
@@ -67,8 +76,12 @@ class TestPage:
         return api.get_database(database_id=TEST_DB)
 
     @fixture(scope="class")
-    def new_page(cls, database):
-        return database.create_page()
+    def data_source(cls, api):
+        return api.get_data_source(data_source_id=TEST_DS)
+
+    @fixture(scope="class")
+    def new_page(cls, data_source):
+        return data_source.create_page()
 
     @mark.parametrize(
         "property,value",
@@ -150,8 +163,8 @@ class TestPage:
     @mark.skip(
         reason="This test will create a notification for the TEST_PEOPLE"
     )
-    def test_create_new_page(self, database):
-        new_page = database.create_page(
+    def test_create_new_page(self, data_source):
+        new_page = data_source.create_page(
             properties={
                 "Name": TEST_TITLE,
                 "Text": TEST_TEXT,
@@ -238,18 +251,38 @@ class TestDatabase:
     def database(cls, api):
         return api.get_database(database_id=TEST_DB)
 
-    def test_query_database(self, database):
-        database.query()
+    def test_get_datasources(self, database):
+        database.data_sources.sort(key=lambda x: x.data_source_id)
+        assert (
+            database.data_sources[0].data_source_id.replace("-", "")
+            == TEST_DS2
+        )
+        assert (
+            database.data_sources[1].data_source_id.replace("-", "") == TEST_DS
+        )
 
-    def test_prop_filter(self, database):
-        pages = database.query(
+
+class TestDatasource:
+    @fixture(scope="class")
+    def api(cls):
+        return NotionAPI(access_token=os.environ.get("NOTION_TOKEN"))
+
+    @fixture(scope="class")
+    def data_source(cls, api):
+        return api.get_data_source(data_source_id=TEST_DS)
+
+    def test_query_database(self, data_source):
+        data_source.query()
+
+    def test_prop_filter(self, data_source):
+        pages = data_source.query(
             filters=SelectFilter(property="Select", equals=TEST_SELECT)
         )
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_and_filter(self, database):
-        pages = database.query(
+    def test_and_filter(self, data_source):
+        pages = data_source.query(
             filters=and_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -260,8 +293,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_large_and_filter(self, database):
-        pages = database.query(
+    def test_large_and_filter(self, data_source):
+        pages = data_source.query(
             filters=and_filter(
                 [NumberFilter(property="Number", equals=TEST_NUMBER)]
                 + [
@@ -275,8 +308,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Number").value == TEST_NUMBER
 
-    def test_or_filter(self, database):
-        pages = database.query(
+    def test_or_filter(self, data_source):
+        pages = data_source.query(
             filters=or_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -287,8 +320,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_large_or_filter(self, database):
-        pages = database.query(
+    def test_large_or_filter(self, data_source):
+        pages = data_source.query(
             filters=or_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -302,13 +335,15 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_sort(self, database):
-        pages = database.query(sorts=[Sort(property="Date")])
+    def test_sort(self, data_source):
+        pages = data_source.query(sorts=[Sort(property="Date")])
         page = next(pages)
         assert page is not None
 
-    def test_descending_sort(self, database):
-        pages = database.query(sorts=[Sort(property="Date", descending=True)])
+    def test_descending_sort(self, data_source):
+        pages = data_source.query(
+            sorts=[Sort(property="Date", descending=True)]
+        )
         page = next(pages)
         assert page is not None
 

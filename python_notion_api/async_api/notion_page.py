@@ -9,7 +9,7 @@ from python_notion_api.async_api.iterators import (
     create_property_iterator,
 )
 from python_notion_api.async_api.utils import ensure_loaded
-from python_notion_api.models.objects import Block, Database, Page, Pagination
+from python_notion_api.models.objects import Block, DataSource, Page, Pagination
 from python_notion_api.models.properties import PropertyItem
 from python_notion_api.models.values import PropertyValue, generate_value
 
@@ -40,20 +40,20 @@ class NotionPage:
         api: "AsyncNotionAPI",
         page_id: str,
         obj: Optional[Page] = None,
-        database: Optional[Database] = None,
+        data_source: Optional[DataSource] = None,
     ):
         self._api = api
         self._page_id = page_id
         self._object = obj
-        self.database = database
+        self.data_source = data_source
 
     async def reload(self):
         """Reloads page from Notion."""
         self._object = await self._api._get(endpoint=f"pages/{self._page_id}")
         if self._object is not None:
-            parent_id = self.parent.database_id
+            parent_id = self.parent.data_source_id
             if parent_id is not None:
-                self.database = await self._api.get_database(parent_id)
+                self.data_source = await self._api.get_data_source(parent_id)
 
     @ensure_loaded
     def __getattr__(self, attr_key: str):

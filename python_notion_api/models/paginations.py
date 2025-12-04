@@ -1,6 +1,11 @@
 from typing import Dict, List, Union
 
-from python_notion_api.models.objects import Block, Database, Page, Pagination
+from python_notion_api.models.objects import (
+    Block,
+    DataSource,
+    Page,
+    Pagination,
+)
 from python_notion_api.models.properties import PropertyItem
 
 
@@ -11,11 +16,11 @@ class PagePagination(Pagination):
     results: List[Page]
 
 
-class PageOrDatabasePagination(Pagination):
+class PageOrDataSourcePagination(Pagination):
     _class_key_field = None
 
-    page_or_database: Dict
-    results: List[Union[Page, Database]]
+    page_or_data_source: Dict
+    results: List[Union[Page, DataSource]]
 
 
 class PropertyItemPagination(Pagination):

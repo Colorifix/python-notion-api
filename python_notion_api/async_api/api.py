@@ -8,6 +8,7 @@ from aiolimiter import AsyncLimiter
 from loguru import logger
 
 from python_notion_api.async_api.notion_block import NotionBlock
+from python_notion_api.async_api.notion_data_source import NotionDataSource
 from python_notion_api.async_api.notion_database import NotionDatabase
 from python_notion_api.async_api.notion_page import NotionPage
 from python_notion_api.async_api.retry_strategy import RetryStrategy
@@ -35,7 +36,7 @@ class AsyncNotionAPI:
     def __init__(
         self,
         access_token: str,
-        api_version: str = "2022-06-28",
+        api_version: str = "2025-09-03",
         page_limit: int = 20,
         rate_limit: tuple[int, int] = (500, 200),
     ):
@@ -74,13 +75,25 @@ class AsyncNotionAPI:
 
         return database
 
-    async def get_page(
-        self, page_id: str, page_cast: type[NotionPage] = NotionPage
-    ) -> NotionPage:
-        """Gets Notion page.
+    async def get_data_source(self, data_source_id: str) -> NotionDataSource:
+        """Gets Notion DataSource
 
         Args:
-            page_id: Id of the database to fetch.
+            data_source_id: Id of the data source to fetch.
+            
+        Returns:
+            A Notion DataSource with the given id.
+        """
+        data_source = NotionDataSource(self, data_source_id)
+        await data_source.reload()
+
+        return data_source
+
+    async def get_page(self, page_id, page_cast=NotionPage) -> NotionPage:
+        """Gets Notion Page
+
+        Args:
+            page_id: Id of the page to fetch.
             page_cast: A subclass of a NotionPage. Allows custom
                 property retrieval.
         Returns:

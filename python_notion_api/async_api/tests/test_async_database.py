@@ -1,12 +1,14 @@
-import random
-
 from pytest import mark
 from pytest_asyncio import fixture as async_fixture
 
 from python_notion_api.async_api.notion_database import NotionDatabase
-from python_notion_api.async_api.notion_page import NotionPage
+from python_notion_api.models.common import DataSourceObject
 
 TEST_DATABASE_ID = "401076f6c7c04ae796bf3e4c847361e1"
+TEST_DATA_SOURCE_IDS = [
+    "28d751c8a89180ed80c8000b05bd4bb1",
+    "924fbc0cb38f4a09ac2f967266f5c743",
+]
 
 
 @mark.asyncio
@@ -21,28 +23,7 @@ class TestAsyncDatabase:
         assert database is not None
         assert database._object is not None
         assert database.title is not None
-        assert database.properties is not None
-        assert database.relations is not None
-
-    async def test_create_database_page(self, database):
-        new_page = await database.create_page(properties={})
-        assert isinstance(new_page, NotionPage)
-        assert new_page._object is not None
-
-    async def test_create_database_page_with_properties(self, database):
-        properties = {
-            "Text": "".join([random.choice("abcd") for _ in range(10)]),
-            "Number": int("".join([random.choice("1234") for _ in range(3)])),
-        }
-        new_page = await database.create_page(properties=properties)
-
-        assert await new_page.get("Text") == properties["Text"]
-        assert await new_page.get("Number") == properties["Number"]
-
-    async def test_query_database(self, database):
-        pages = database.query()
-        page = await anext(pages)
-        assert isinstance(page, NotionPage)
+        assert database.data_sources is not None
 
     async def test_get_object_property(self, database):
         created_time = database.created_time
@@ -52,13 +33,16 @@ class TestAsyncDatabase:
         title = database.title
         assert title is not None
 
-    async def test_get_properties(self, database):
-        properties = database.properties
-        assert isinstance(properties, dict)
+    async def test_get_data_sources(self, database):
+        data_sources = database.data_sources
+        assert isinstance(data_sources, list)
 
-    async def test_get_relations(self, database):
-        relations = database.relations
-        assert isinstance(relations, dict)
+        data_sources.sort(key=lambda x: x.data_source_id)
 
-        for _, relation in relations.items():
-            assert relation.config_type == "relation"
+        for i, data_source in enumerate(data_sources):
+            assert isinstance(data_source, DataSourceObject)
+            assert (
+                data_source.data_source_id.replace("-", "")
+                == TEST_DATA_SOURCE_IDS[i]
+            )
+            assert data_source.data_source_name is not None

@@ -106,6 +106,7 @@ from python_notion_api.models.iterators import PropertyItemIterator
 from python_notion_api.models.objects import (
     Block,
     Database,
+    DataSource,
     NotionObject,
     NotionObjectBase,
     Page,
@@ -177,6 +178,7 @@ __all__ = [
     "User",
     "Pagination",
     "Database",
+    "DataSource",
     "Page",
     "Block",
     "PropertyItem",
