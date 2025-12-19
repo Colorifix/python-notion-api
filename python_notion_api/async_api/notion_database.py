@@ -1,6 +1,4 @@
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Optional
-
-from pydantic.v1 import BaseModel
+from typing import TYPE_CHECKING, List
 
 from python_notion_api.async_api.utils import ensure_loaded
 from python_notion_api.models.common import DataSourceObject

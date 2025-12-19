@@ -80,7 +80,7 @@ class AsyncNotionAPI:
 
         Args:
             data_source_id: Id of the data source to fetch.
-            
+
         Returns:
             A Notion DataSource with the given id.
         """

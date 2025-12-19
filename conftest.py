@@ -31,7 +31,7 @@ def database_id() -> str:
 
 
 @fixture(scope="session")
-def data_source_id1() ->  str:
+def data_source_id1() -> str:
     return "2cef2075b1dc80bab834000b42b068d7"
 
 

@@ -15,7 +15,6 @@ from python_notion_api.models.filters import (
 )
 from python_notion_api.models.sorts import Sort
 
-
 TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5

@@ -27,8 +27,9 @@ class TestAsyncDatabase:
         title = database.title
         assert title is not None
 
-    async def test_get_data_sources(self, database, data_source_id1,
-                                    data_source_id2):
+    async def test_get_data_sources(
+        self, database, data_source_id1, data_source_id2
+    ):
         data_sources = database.data_sources
         assert isinstance(data_sources, list)
 
@@ -36,10 +37,12 @@ class TestAsyncDatabase:
 
         assert len(data_sources) == 2
         assert isinstance(data_sources[0], DataSourceObject)
-        assert data_sources[0].data_source_id.replace("-", "") == data_source_id2
+        assert (
+            data_sources[0].data_source_id.replace("-", "") == data_source_id2
+        )
         assert data_sources[0].data_source_name is not None
         assert isinstance(data_sources[1], DataSourceObject)
-        assert data_sources[1].data_source_id.replace(
-            "-", ""
-            ) == data_source_id1
+        assert (
+            data_sources[1].data_source_id.replace("-", "") == data_source_id1
+        )
         assert data_sources[1].data_source_name is not None

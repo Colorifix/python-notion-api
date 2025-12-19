@@ -13,7 +13,6 @@ from python_notion_api.models.filters import (
 )
 from python_notion_api.models.sorts import Sort
 
-
 TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5
@@ -254,7 +253,8 @@ class TestDatabase:
             == data_source_id2
         )
         assert (
-            database.data_sources[1].data_source_id.replace("-", "") == data_source_id1
+            database.data_sources[1].data_source_id.replace("-", "")
+            == data_source_id1
         )
 
 

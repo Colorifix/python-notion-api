@@ -1,4 +1,4 @@
-from typing import Any, Generator, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Generator, Optional
 
 from pydantic.v1 import BaseModel
 

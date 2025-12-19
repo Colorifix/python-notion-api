@@ -9,7 +9,12 @@ from python_notion_api.async_api.iterators import (
     create_property_iterator,
 )
 from python_notion_api.async_api.utils import ensure_loaded
-from python_notion_api.models.objects import Block, DataSource, Page, Pagination
+from python_notion_api.models.objects import (
+    Block,
+    DataSource,
+    Page,
+    Pagination,
+)
 from python_notion_api.models.properties import PropertyItem
 from python_notion_api.models.values import PropertyValue, generate_value
 
