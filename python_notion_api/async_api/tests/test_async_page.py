@@ -12,8 +12,8 @@ from python_notion_api.async_api.notion_page import NotionPage
 @mark.asyncio
 class TestAsyncPage:
     @async_fixture
-    async def page(self, async_api, example_page_id_2):
-        async_page = NotionPage(page_id=example_page_id_2, api=async_api)
+    async def page(self, async_api, example_page_id):
+        async_page = NotionPage(page_id=example_page_id, api=async_api)
         await async_page.reload()
         return async_page
 

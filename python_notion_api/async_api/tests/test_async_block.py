@@ -6,14 +6,12 @@ from pytest_asyncio import fixture as async_fixture
 from python_notion_api.async_api.notion_block import NotionBlock
 from python_notion_api.models import ParagraphBlock, RichTextObject
 
-TEST_BLOCK_ID = "f572e889cd374edbbd15d8bf13174bbc"
-
 
 @mark.asyncio
 class TestAsyncBlock:
     @async_fixture
-    async def block(self, async_api):
-        block = NotionBlock(block_id=TEST_BLOCK_ID, api=async_api)
+    async def block(self, async_api, block_id):
+        block = NotionBlock(block_id=block_id, api=async_api)
         await block.reload()
         return block
 

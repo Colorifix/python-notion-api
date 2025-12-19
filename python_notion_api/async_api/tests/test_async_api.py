@@ -6,29 +6,25 @@ from python_notion_api.async_api.notion_data_source import NotionDataSource
 from python_notion_api.async_api.notion_database import NotionDatabase
 from python_notion_api.async_api.notion_page import NotionPage
 
-TEST_DATABASE_ID = "401076f6c7c04ae796bf3e4c847361e1"
-TEST_DATA_SOURCE_ID = "924fbc0cb38f4a09ac2f967266f5c743"
-TEST_BLOCK_ID = "f572e889cd374edbbd15d8bf13174bbc"
+
+@async_fixture
+async def page(async_api, example_page_id):
+    return await async_api.get_page(page_id=example_page_id)
 
 
 @async_fixture
-async def page(async_api, example_page_id_2):
-    return await async_api.get_page(page_id=example_page_id_2)
+async def database(async_api, database_id):
+    return await async_api.get_database(database_id=database_id)
 
 
 @async_fixture
-async def database(async_api):
-    return await async_api.get_database(database_id=TEST_DATABASE_ID)
+async def data_source(async_api, data_source_id1):
+    return await async_api.get_data_source(data_source_id=data_source_id1)
 
 
 @async_fixture
-async def data_source(async_api):
-    return await async_api.get_data_source(data_source_id=TEST_DATA_SOURCE_ID)
-
-
-@async_fixture
-async def block(async_api):
-    return await async_api.get_block(block_id=TEST_BLOCK_ID)
+async def block(async_api, block_id):
+    return await async_api.get_block(block_id=block_id)
 
 
 @mark.asyncio

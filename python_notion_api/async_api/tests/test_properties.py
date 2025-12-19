@@ -15,8 +15,7 @@ from python_notion_api.models.filters import (
 )
 from python_notion_api.models.sorts import Sort
 
-TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
-TEST_DS = "924fbc0cb38f4a09ac2f967266f5c743"
+
 TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5
@@ -24,7 +23,7 @@ TEST_SELECT = "foo"
 TEST_STATUS = "In progress"
 TEST_MULTI_SELECT = ["foo", "bar", "baz"]
 TEST_DATE = datetime.now()
-TEST_PEOPLE = ["fa9e1df9-7c24-427c-9c20-eac629565fe4"]
+TEST_PEOPLE = ["2ced872b-594c-8176-a765-0002860b6fdc"]
 TEST_FILES = [File(name="foo.pdf", url="http://example.com/file")]
 TEST_CHECKBOX = True
 TEST_URL = "http://example.com"
@@ -33,22 +32,22 @@ TEST_PHONE = "079847364088"
 
 
 @async_fixture
-async def database(async_api):
-    return await async_api.get_database(database_id=TEST_DB)
+async def database(async_api, database_id):
+    return await async_api.get_database(database_id=database_id)
 
 
 @async_fixture
-async def data_source(async_api):
-    return await async_api.get_data_source(data_source_id=TEST_DS)
+async def data_source(async_api, data_source_id1):
+    return await async_api.get_data_source(data_source_id=data_source_id1)
 
 
 @mark.asyncio
 class TestCore:
-    async def test_get_database(self, database):
-        assert database.database_id == TEST_DB
+    async def test_get_database(self, database, database_id):
+        assert database.database_id == database_id
 
-    async def test_get_data_source(self, data_source):
-        assert data_source.data_source_id == TEST_DS
+    async def test_get_data_source(self, data_source, data_source_id1):
+        assert data_source.data_source_id == data_source_id1
 
     async def test_create_empty_page(self, data_source):
         new_page = await data_source.create_page()
@@ -81,18 +80,18 @@ class TestPage:
         return cls.async_api
 
     @async_fixture(scope="class")
-    async def data_source(cls, api):
+    async def data_source(cls, api, data_source_id1):
         if not hasattr(cls, "async_data_source"):
             cls.async_data_source = await cls.async_api.get_data_source(
-                data_source_id=TEST_DS
+                data_source_id=data_source_id1
             )
         return cls.async_data_source
 
     @async_fixture(scope="class")
-    async def database(cls, api):
+    async def database(cls, api, database_id):
         if not hasattr(cls, "async_database"):
             cls.async_database = await cls.async_api.get_database(
-                database_id=TEST_DB
+                database_id=database_id
             )
         return cls.async_database
 
@@ -198,18 +197,18 @@ class TestPage:
 
     async def test_get_by_id(self, page):
         await page.set("Email", TEST_EMAIL)
-        email = await page.get("%3E%5Ehh", cache=False)
+        email = await page.get("FEe%40", cache=False)
         assert email == TEST_EMAIL
 
     async def test_set_by_id(self, page):
-        await page.set("%3E%5Ehh", TEST_EMAIL)
+        await page.set("FEe%40", TEST_EMAIL)
         email = await page.get("Email", cache=False)
         assert email == TEST_EMAIL
 
     async def test_update(self, page):
         await page.update(
             properties={
-                "%3E%5Ehh": TEST_EMAIL,
+                "FEe%40": TEST_EMAIL,
                 "Phone": TEST_PHONE,
                 "Multi-select": None,
             }
@@ -233,17 +232,15 @@ class TestPage:
 
 @mark.asyncio
 class TestRollups:
-    NUMBER_PAGE_ID = "25e800a118414575ab30a8dc42689b74"
-    DATE_PAGE_ID = "e38bb90faf8a436895f089fed2446cc6"
-    EMPTY_ROLLUP_PAGE_ID = "2b5efae5bad24df884b4f953e3788b64"
+    EMPTY_ROLLUP_PAGE_ID = "2cef2075b1dc80b5b67edc58426e92f2"
 
-    async def test_number_rollup(self, async_api):
-        number_page = await async_api.get_page(self.NUMBER_PAGE_ID)
+    async def test_number_rollup(self, async_api, example_page_id):
+        number_page = await async_api.get_page(example_page_id)
         num = await number_page.get("Number rollup")
         assert num == 10
 
-    async def test_date_rollup(self, async_api):
-        date_page = await async_api.get_page(self.DATE_PAGE_ID)
+    async def test_date_rollup(self, async_api, example_page_id):
+        date_page = await async_api.get_page(example_page_id)
         date = await date_page.get("Date rollup")
         assert isinstance(date.start, datetime)
 

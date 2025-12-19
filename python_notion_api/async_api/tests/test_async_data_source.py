@@ -6,15 +6,13 @@ from pytest_asyncio import fixture as async_fixture
 from python_notion_api.async_api.notion_data_source import NotionDataSource
 from python_notion_api.async_api.notion_page import NotionPage
 
-TEST_DATA_SOURCE_ID = "924fbc0cb38f4a09ac2f967266f5c743"
-
 
 @mark.asyncio
 class TestAsyncDataSource:
     @async_fixture
-    async def data_source(self, async_api):
+    async def data_source(self, async_api, data_source_id1):
         data_source = NotionDataSource(
-            data_source_id=TEST_DATA_SOURCE_ID, api=async_api
+            data_source_id=data_source_id1, api=async_api
         )
         await data_source.reload()
         return data_source
