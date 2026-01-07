@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 from pydantic.v1 import BaseModel
 
-from python_notion_api.models.fields import idField, typeField
+from python_notion_api.models.fields import idField, nameField, typeField
 
 
 class LinkObject(BaseModel):
@@ -93,6 +93,7 @@ class ParentObject(BaseModel):
     parent_type: str = typeField
     page_id: Optional[str]
     database_id: Optional[str]
+    data_source_id: Optional[str]
 
 
 class SelectObject(BaseModel):
@@ -136,3 +137,8 @@ class RollupObject(BaseModel):
 class UniqueIDObject(BaseModel):
     prefix: Optional[str]
     number: int
+
+
+class DataSourceObject(BaseModel):
+    data_source_id: str = idField
+    data_source_name: str = nameField

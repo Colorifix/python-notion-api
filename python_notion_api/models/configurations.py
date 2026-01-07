@@ -13,6 +13,7 @@ class NotionPropertyConfiguration(NotionObjectBase):
     config_id: str = idField
     config_type: str = typeField
     name: str
+    description: Optional[str]
 
     _class_map = {
         "title": "TitlePropertyConfiguration",
@@ -146,6 +147,7 @@ class RelationPropertyConfiguration(NotionPropertyConfiguration):
 
 class SinglePropertyConfigurationObject(BaseModel):
     database_id: str
+    data_source_id: str
     relation_type: str = typeField
     single_property: Dict
 
@@ -163,6 +165,7 @@ class SyncedPropertyConfigurationObject(BaseModel):
 
 class DualPropertyConfigurationObject(BaseModel):
     database_id: str
+    data_source_id: str
     dual_property: SyncedPropertyConfigurationObject
 
 

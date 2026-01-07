@@ -3,10 +3,10 @@ import inspect
 
 def ensure_loaded(fn):
     """Checks that the `_object` of the method's class is fetched before
-    perfomign operations on it.
+    performing operations on it.
 
     Args:
-        fn: method of `NotionPage` or `NodtionDatabase` or other class
+        fn: method of `NotionPage` or `NotionDatabase` or other class
             that has `_object` attribute.
     """
     is_coroutine = inspect.iscoroutinefunction(fn)

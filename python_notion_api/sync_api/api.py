@@ -10,7 +10,11 @@ from requests.packages.urllib3 import PoolManager
 from requests.packages.urllib3.exceptions import MaxRetryError
 from requests.packages.urllib3.util.retry import Retry
 
-from python_notion_api.models.common import FileObject, ParentObject
+from python_notion_api.models.common import (
+    DataSourceObject,
+    FileObject,
+    ParentObject,
+)
 from python_notion_api.models.configurations import (
     NotionPropertyConfiguration,
     RelationPropertyConfiguration,
@@ -24,6 +28,7 @@ from python_notion_api.models.iterators import (
 from python_notion_api.models.objects import (
     Block,
     Database,
+    DataSource,
     NotionObjectBase,
     Page,
     Pagination,
@@ -57,12 +62,12 @@ class NotionPage:
         api: NotionAPI,
         page_id: str,
         obj: Optional[Page] = None,
-        database: Optional[NotionDatabase] = None,
+        data_source: Optional[NotionDataSource] = None,
     ):
         self._api = api
         self._page_id = page_id
         self._object = obj
-        self.database = database
+        self.data_source = data_source
 
         if self._object is None:
             self.reload()
@@ -72,9 +77,10 @@ class NotionPage:
         if self._object is None:
             raise ValueError(f"Page {page_id} could not be found")
 
-        if database is None:
-            parent_id = self.parent.database_id
-            self.database = self._api.get_database(parent_id)
+        if data_source is None:
+            parent_id = self.parent.data_source_id
+            if parent_id is not None:
+                self.data_source = self._api.get_data_source(parent_id)
 
     def __getattr__(self, attr_key: str):
         return getattr(self._object, attr_key)
@@ -455,11 +461,6 @@ class NotionDatabase:
         database_id: Id of the database.
     """
 
-    class CreatePageRequest(BaseModel):
-        parent: ParentObject
-        properties: dict[str, PropertyValue]
-        cover: Optional[FileObject]
-
     def __init__(self, api: NotionAPI, database_id: str):
         self._api = api
         self._database_id = database_id
@@ -470,10 +471,9 @@ class NotionDatabase:
         if self._object is None:
             raise Exception(f"Error accessing database {self._database_id}")
 
-        self._properties = {
-            key: NotionPropertyConfiguration.from_obj(val)
-            for key, val in self._object.properties.items()
-        }
+        self._data_sources = [
+            DataSourceObject(**val) for val in self._object.data_sources
+        ]
         self._title = "".join(rt.plain_text for rt in self._object.title)
 
     @property
@@ -491,20 +491,51 @@ class NotionDatabase:
         return self._title
 
     @property
-    def properties(self) -> dict[str, NotionPropertyConfiguration]:
-        """Gets all property configurations of the database."""
-        return self._properties
+    def data_sources(self) -> list[DataSourceObject]:
+        """Gets all data sources of the database."""
+        return self._data_sources
+
+
+class NotionDataSource:
+    """Wrapper for a Notion data source object.
+
+    Args:
+        api: Instance of the NotionAPI.
+        data_source_id: Id of the data source.
+    """
+
+    class CreatePageRequest(BaseModel):
+        parent: ParentObject
+        properties: dict[str, PropertyValue]
+        cover: Optional[FileObject]
+
+    def __init__(self, api: NotionAPI, data_source_id: str):
+        self._api = api
+        self._data_source_id = data_source_id
+        self._object = self._api._get(
+            endpoint=f"data_sources/{self._data_source_id}",
+            cast_cls=DataSource,
+        )
+
+        if self._object is None:
+            raise Exception(
+                f"Error accessing data source {self._data_source_id}"
+            )
+
+        self._properties = {
+            key: NotionPropertyConfiguration.from_obj(val)
+            for key, val in self._object.properties.items()
+        }
+        self._title = "".join(rt.plain_text for rt in self._object.title)
 
     @property
-    def relations(self) -> dict[str, RelationPropertyConfiguration]:
-        """Gets all property configurations of the database that are
-        relations.
+    def data_source_id(self) -> str:
+        """Gets data source id.
+
+        Returns:
+            Id of the data source.
         """
-        return {
-            key: val
-            for key, val in self._properties.items()
-            if isinstance(val, RelationPropertyConfiguration)
-        }
+        return self._data_source_id.replace("-", "")
 
     def query(
         self,
@@ -513,9 +544,9 @@ class NotionDatabase:
         cast_cls=NotionPage,
         page_limit: Optional[int] = None,
     ) -> Generator[NotionPage, None, None]:
-        """Queries the database.
+        """Queries the data source.
 
-        Retrieves all pages belonging to the database that satisfy the given filters
+        Retrieves all pages belonging to the data source that satisfy the given filters
         in the order specified by the sorts.
 
         Args:
@@ -539,21 +570,63 @@ class NotionDatabase:
             ]
 
         for item in self._api._post_iterate(
-            endpoint=f"databases/{self._database_id}/query",
+            endpoint=f"data_sources/{self._data_source_id}/query",
             data=data,
             retry_strategy=self._api.post_retry_strategy,
             page_limit=page_limit,
         ):
             yield cast_cls(
-                api=self._api, database=self, page_id=item.page_id, obj=item
+                api=self._api, data_source=self, page_id=item.page_id, obj=item
             )
+
+    @property
+    def title(self) -> str:
+        """Get the title of the data source."""
+        return self._title
+
+    @property
+    def properties(self) -> dict[str, NotionPropertyConfiguration]:
+        """Gets all property configurations of the data source."""
+        return self._properties
+
+    @property
+    def relations(self) -> dict[str, RelationPropertyConfiguration]:
+        """Gets all property configurations of the data source that are
+        relations.
+        """
+        return {
+            key: val
+            for key, val in self._properties.items()
+            if isinstance(val, RelationPropertyConfiguration)
+        }
+
+    def get_property(self, prop_config: Any, prop_value: str) -> Any:
+        """Create property for a given property configuration."""
+
+        if isinstance(prop_value, (PropertyItem, PropertyItemIterator)):
+            type_ = prop_value.property_type
+
+            if type_ != prop_config.config_type:
+                # Have a mismatch between the property type and the
+                # given item
+                raise TypeError(
+                    f"Item {prop_value.__class__} given as "
+                    f"the value for property "
+                    f"{prop_config.__class__}"
+                )
+            new_prop = prop_value
+
+        else:
+            new_prop = prop_config.create_property(prop_value)
+
+        return new_prop
 
     def create_page(
         self,
         properties: dict[str, Any] = {},
         cover_url: Optional[str] = None,
     ) -> NotionPage:
-        """Creates a new page in the Database and updates the new page with
+        """Creates a new page in the data source and updates the new page with
         the properties.
 
         Args:
@@ -561,7 +634,7 @@ class NotionDatabase:
             will depend on the property type. Can be the raw value
             (e.g. string, float) or an object (e.g. SelectValue,
             NumberPropertyItem)
-            cover: URL of an image for the page cover.
+            cover_url: URL of an image for the page cover.
 
         Returns:
             A new page.
@@ -575,9 +648,9 @@ class NotionDatabase:
             value = generate_value(prop.config_type, prop_value)
             validated_properties[prop_name] = value
 
-        request = NotionDatabase.CreatePageRequest(
+        request = NotionDataSource.CreatePageRequest(
             parent=ParentObject(
-                type="database_id", database_id=self.database_id
+                type="data_source_id", data_source_id=self.data_source_id
             ),
             properties=validated_properties,
             cover=(
@@ -599,7 +672,7 @@ class NotionDatabase:
             api=self._api,
             page_id=new_page.page_id,
             obj=new_page,
-            database=self,
+            data_source=self,
         )
 
 
@@ -615,7 +688,7 @@ class NotionAPI:
     def __init__(
         self,
         access_token: str,
-        api_version: str = "2022-06-28",
+        api_version: str = "2025-09-03",
         page_limit: int = 20,
     ):
         self._access_token = access_token
@@ -888,11 +961,18 @@ class NotionAPI:
 
         Args:
             database_id: Id of the database to fetch.
-
         Returns:
             A Notion database with the given id.
         """
         return NotionDatabase(self, database_id)
+
+    def get_data_source(self, data_source_id: str) -> NotionDataSource:
+        """Wrapper for 'Retrieve a data source' action.
+
+        Args:
+            data_source_id: Id of the data source to fetch.
+        """
+        return NotionDataSource(self, data_source_id)
 
     def get_page(
         self, page_id: str, page_cast: Type[NotionPage] = NotionPage
@@ -900,7 +980,7 @@ class NotionAPI:
         """Gets Notion page.
 
         Args:
-            page_id: Id of the database to fetch.
+            page_id: Id of the page to fetch.
             page_cast: A subclass of a NotionPage. Allows custom
                 property retrieval.
 

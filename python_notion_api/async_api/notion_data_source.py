@@ -1,0 +1,172 @@
+from typing import TYPE_CHECKING, Any, Generator, Optional
+
+from pydantic.v1 import BaseModel
+
+from python_notion_api.async_api.notion_page import NotionPage
+from python_notion_api.async_api.utils import ensure_loaded
+from python_notion_api.models.common import FileObject, ParentObject
+from python_notion_api.models.configurations import (
+    NotionPropertyConfiguration,
+    RelationPropertyConfiguration,
+)
+from python_notion_api.models.filters import FilterItem
+from python_notion_api.models.objects import DataSource
+from python_notion_api.models.sorts import Sort
+from python_notion_api.models.values import PropertyValue, generate_value
+
+if TYPE_CHECKING:
+    from python_notion_api.async_api.api import AsyncNotionAPI
+
+
+class NotionDataSource:
+    """Wrapper for a Notion datasource object.
+
+    Args:
+        api: Instance of the NotionAPI.
+        data_source_id: Id of the data source.
+    """
+
+    class CreatePageRequest(BaseModel):
+        parent: ParentObject
+        properties: dict[str, PropertyValue]
+        cover: Optional[FileObject]
+
+    def __init__(self, api: "AsyncNotionAPI", data_source_id: str):
+        self._api = api
+        self._data_source_id = data_source_id
+        self._object = None
+        self._properties = None
+        self._title = None
+
+    @ensure_loaded
+    def __getattr__(self, attr_key):
+        return getattr(self._object, attr_key)
+
+    @property
+    def data_source_id(self) -> str:
+        return self._data_source_id.replace("-", "")
+
+    async def reload(self):
+        self._object = await self._api._get(
+            endpoint=f"data_sources/{self._data_source_id}",
+            cast_cls=DataSource,
+        )
+
+        if self._object is None:
+            raise Exception(
+                f"Error loading data source {self._data_source_id}"
+            )
+
+        self._properties = {
+            key: NotionPropertyConfiguration.from_obj(val)
+            for key, val in self._object.properties.items()
+        }
+        self._title = "".join(rt.plain_text for rt in self._object.title)
+
+    async def query(
+        self,
+        filters: Optional[FilterItem] = None,
+        sorts: Optional[list[Sort]] = None,
+        page_limit: Optional[int] = None,
+        cast_cls=NotionPage,
+    ) -> Generator[NotionPage, None, None]:
+        """A wrapper for 'Query a data source' action.
+
+        Retrieves all pages belonging to the data source.
+
+        Args:
+            filters:
+            sorts:
+            cast_cls: A subclass of a NotionPage. Allows custom
+            property retrieval
+
+        """
+        data = {}
+        if filters is not None:
+            filters = filters.dict(by_alias=True, exclude_unset=True)
+            data["filter"] = filters
+
+        if sorts is not None:
+            data["sorts"] = [
+                sort.dict(by_alias=True, exclude_unset=True) for sort in sorts
+            ]
+
+        async for item in self._api._post_iterate(
+            endpoint=f"data_sources/{self._data_source_id}/query",
+            data=data,
+            page_limit=page_limit,
+        ):
+            yield cast_cls(
+                api=self._api, data_source=self, page_id=item.page_id, obj=item
+            )
+
+    @property
+    @ensure_loaded
+    def title(self) -> str:
+        """Get the title of the data source."""
+        return self._title
+
+    @property
+    @ensure_loaded
+    def properties(self) -> dict[str, NotionPropertyConfiguration]:
+        """Get all property configurations of the data source."""
+        return self._properties
+
+    @property
+    @ensure_loaded
+    def relations(self) -> dict[str, RelationPropertyConfiguration]:
+        """Get all property configurations of the data source that are
+        relations.
+        """
+        return {
+            key: val
+            for key, val in self._properties.items()
+            if isinstance(val, RelationPropertyConfiguration)
+        }
+
+    async def create_page(
+        self,
+        properties: dict[str, Any] = {},
+        cover_url: Optional[str] = None,
+    ) -> NotionPage:
+        """Creates a new page in the Data Source and updates the new page with
+        the properties.
+
+        Args:
+            properties: Dictionary of property names and values. Value types
+            will depend on the property type. Can be the raw value
+            (e.g. string, float) or an object (e.g. SelectValue,
+            NumberPropertyItem)
+            cover_url: URL of an image for the page cover.
+        """
+
+        validated_properties = {}
+        for prop_name, prop_value in properties.items():
+            prop = self.properties.get(prop_name, None)
+            if prop is None:
+                raise ValueError(f"Unknown property: {prop_name}")
+            value = generate_value(prop.config_type, prop_value)
+            validated_properties[prop_name] = value
+
+        request = NotionDataSource.CreatePageRequest(
+            parent=ParentObject(
+                type="data_source_id", data_source_id=self.data_source_id
+            ),
+            properties=validated_properties,
+            cover=(
+                FileObject.from_url(cover_url)
+                if cover_url is not None
+                else None
+            ),
+        )
+
+        data = request.json(by_alias=True, exclude_unset=True)
+
+        new_page = await self._api._post("pages", data=data)
+
+        return NotionPage(
+            api=self._api,
+            page_id=new_page.page_id,
+            obj=new_page,
+            data_source=self,
+        )
