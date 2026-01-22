@@ -13,8 +13,6 @@ from python_notion_api.models.filters import (
 )
 from python_notion_api.models.sorts import Sort
 
-TEST_DB = "401076f6c7c04ae796bf3e4c847361e1"
-
 TEST_TITLE = f"API Test {datetime.now(UTC).isoformat()}"
 TEST_TEXT = "Test text is boring"
 TEST_NUMBER = 12.5
@@ -22,7 +20,7 @@ TEST_SELECT = "foo"
 TEST_STATUS = "In progress"
 TEST_MULTI_SELECT = ["foo", "bar", "baz"]
 TEST_DATE = datetime.now()
-TEST_PEOPLE = ["fa9e1df9-7c24-427c-9c20-eac629565fe4"]
+TEST_PEOPLE = ["2ced872b-594c-8176-a765-0002860b6fdc"]
 TEST_FILES = [File(name="foo.pdf", url="http://example.com/file")]
 TEST_CHECKBOX = True
 TEST_URL = "http://colorifix.com"
@@ -36,20 +34,28 @@ def api():
 
 
 @fixture
-def database(api):
-    return api.get_database(database_id=TEST_DB)
+def database(api, database_id):
+    return api.get_database(database_id=database_id)
+
+
+@fixture
+def data_source(api, data_source_id1):
+    return api.get_data_source(data_source_id=data_source_id1)
 
 
 class TestCore:
-    def test_database_id(self, database):
-        assert database.database_id == TEST_DB
+    def test_database_id(self, database, database_id):
+        assert database.database_id == database_id
 
-    def test_create_empty_page(self, database):
-        new_page = database.create_page()
+    def test_get_data_source(self, data_source, data_source_id1):
+        assert data_source.data_source_id == data_source_id1
+
+    def test_create_empty_page(self, data_source):
+        new_page = data_source.create_page()
         assert new_page is not None
 
-    def test_create_empty_page_with_cover(self, database, cover_url):
-        new_page = database.create_page(cover_url=cover_url)
+    def test_create_empty_page_with_cover(self, data_source, cover_url):
+        new_page = data_source.create_page(cover_url=cover_url)
         assert new_page is not None
 
     def test_get_page(self, api, example_page_id):
@@ -63,12 +69,16 @@ class TestPage:
         return NotionAPI(access_token=os.environ.get("NOTION_TOKEN"))
 
     @fixture(scope="class")
-    def database(cls, api):
-        return api.get_database(database_id=TEST_DB)
+    def database(cls, api, database_id):
+        return api.get_database(database_id=database_id)
 
     @fixture(scope="class")
-    def new_page(cls, database):
-        return database.create_page()
+    def data_source(cls, api, data_source_id1):
+        return api.get_data_source(data_source_id=data_source_id1)
+
+    @fixture(scope="class")
+    def new_page(cls, data_source):
+        return data_source.create_page()
 
     @mark.parametrize(
         "property,value",
@@ -150,8 +160,8 @@ class TestPage:
     @mark.skip(
         reason="This test will create a notification for the TEST_PEOPLE"
     )
-    def test_create_new_page(self, database):
-        new_page = database.create_page(
+    def test_create_new_page(self, data_source):
+        new_page = data_source.create_page(
             properties={
                 "Name": TEST_TITLE,
                 "Text": TEST_TEXT,
@@ -176,18 +186,18 @@ class TestPage:
 
     def test_get_by_id(self, new_page):
         new_page.set("Email", TEST_EMAIL)
-        email = new_page.get("%3E%5Ehh", cache=False).value
+        email = new_page.get("FEe%40", cache=False).value
         assert email == TEST_EMAIL
 
     def test_set_by_id(self, new_page):
-        new_page.set("%3E%5Ehh", TEST_EMAIL)
+        new_page.set("FEe%40", TEST_EMAIL)
         email = new_page.get("Email", cache=False).value
         assert email == TEST_EMAIL
 
     def test_update(self, new_page):
         new_page.update(
             properties={
-                "%3E%5Ehh": TEST_EMAIL,
+                "FEe%40": TEST_EMAIL,
                 "Phone": TEST_PHONE,
                 "Multi-select": None,
             }
@@ -209,17 +219,15 @@ class TestPage:
 
 
 class TestRollups:
-    NUMBER_PAGE_ID = "25e800a118414575ab30a8dc42689b74"
-    DATE_PAGE_ID = "e38bb90faf8a436895f089fed2446cc6"
-    EMPTY_ROLLUP_PAGE_ID = "2b5efae5bad24df884b4f953e3788b64"
+    EMPTY_ROLLUP_PAGE_ID = "2cef2075b1dc80b5b67edc58426e92f2"
 
-    def test_number_rollup(self, api):
-        number_page = api.get_page(self.NUMBER_PAGE_ID)
+    def test_number_rollup(self, api, example_page_id):
+        number_page = api.get_page(example_page_id)
         num = number_page.get("Number rollup")
         assert num.value == 10
 
-    def test_date_rollup(self, api):
-        date_page = api.get_page(self.DATE_PAGE_ID)
+    def test_date_rollup(self, api, example_page_id):
+        date_page = api.get_page(example_page_id)
         date = date_page.get("Date rollup")
         assert isinstance(date.value.start, datetime)
 
@@ -235,21 +243,42 @@ class TestDatabase:
         return NotionAPI(access_token=os.environ.get("NOTION_TOKEN"))
 
     @fixture(scope="class")
-    def database(cls, api):
-        return api.get_database(database_id=TEST_DB)
+    def database(cls, api, database_id):
+        return api.get_database(database_id=database_id)
 
-    def test_query_database(self, database):
-        database.query()
+    def test_get_datasources(self, database, data_source_id1, data_source_id2):
+        database.data_sources.sort(key=lambda x: x.data_source_id)
+        assert (
+            database.data_sources[0].data_source_id.replace("-", "")
+            == data_source_id2
+        )
+        assert (
+            database.data_sources[1].data_source_id.replace("-", "")
+            == data_source_id1
+        )
 
-    def test_prop_filter(self, database):
-        pages = database.query(
+
+class TestDatasource:
+    @fixture(scope="class")
+    def api(cls):
+        return NotionAPI(access_token=os.environ.get("NOTION_TOKEN"))
+
+    @fixture(scope="class")
+    def data_source(cls, api, data_source_id1):
+        return api.get_data_source(data_source_id=data_source_id1)
+
+    def test_query_database(self, data_source):
+        data_source.query()
+
+    def test_prop_filter(self, data_source):
+        pages = data_source.query(
             filters=SelectFilter(property="Select", equals=TEST_SELECT)
         )
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_and_filter(self, database):
-        pages = database.query(
+    def test_and_filter(self, data_source):
+        pages = data_source.query(
             filters=and_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -260,8 +289,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_large_and_filter(self, database):
-        pages = database.query(
+    def test_large_and_filter(self, data_source):
+        pages = data_source.query(
             filters=and_filter(
                 [NumberFilter(property="Number", equals=TEST_NUMBER)]
                 + [
@@ -275,8 +304,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Number").value == TEST_NUMBER
 
-    def test_or_filter(self, database):
-        pages = database.query(
+    def test_or_filter(self, data_source):
+        pages = data_source.query(
             filters=or_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -287,8 +316,8 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_large_or_filter(self, database):
-        pages = database.query(
+    def test_large_or_filter(self, data_source):
+        pages = data_source.query(
             filters=or_filter(
                 [
                     SelectFilter(property="Select", equals=TEST_SELECT),
@@ -302,13 +331,15 @@ class TestDatabase:
         page = next(pages)
         assert page.get("Select").value == TEST_SELECT
 
-    def test_sort(self, database):
-        pages = database.query(sorts=[Sort(property="Date")])
+    def test_sort(self, data_source):
+        pages = data_source.query(sorts=[Sort(property="Date")])
         page = next(pages)
         assert page is not None
 
-    def test_descending_sort(self, database):
-        pages = database.query(sorts=[Sort(property="Date", descending=True)])
+    def test_descending_sort(self, data_source):
+        pages = data_source.query(
+            sorts=[Sort(property="Date", descending=True)]
+        )
         page = next(pages)
         assert page is not None
 

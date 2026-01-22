@@ -22,9 +22,9 @@
     ```python
     async def main():
         async_api = AsyncNotionAPI(access_token='<NOTION_TOKEN>')
-        database = await async_api.get_database(database_id='<DATABASE_ID>')
+        data_source = await async_api.get_data_source(data_source_id='<DATA_SOURCE_ID>')
 
-        await database.create_page(properties={
+        await data_source.create_page(properties={
             'Number_property': 234,
             'Select_property': 'select1',
             'Checkbox_property': True,
@@ -36,9 +36,9 @@
 
     ```python
     api = NotionAPI(access_token='<NOTION_TOKEN>')
-    database = api.get_database(database_id='<DATABASE_ID>')
+    data_source = api.get_data_source(data_source_id='<DATA_SOURCE_ID>')
 
-    database.create_page(properties={
+    data_source.create_page(properties={
         'Number_property': 234,
         'Select_property': 'select1',
         'Checkbox_property': True,
@@ -130,8 +130,8 @@ In particular, the values of rollups and formulas may be incorrect when retrieve
 To use custom page properties, create a subclass of NotionPage. Define a function to get each custom property (these must return a `PropertyValue`) and define the mapping from Notion property names to the function names.
 
 ```python
-from python_notion_api.api import NotionPage
-from python_notion_api.models import RichTextObject
+from python_notion_api.sync_api.api import NotionPage
+from python_notion_api.models import RichTextObject, RichTextPropertyItem
 from python_notion_api.models.values import RichTextPropertyValue
 
 class MyPage(NotionPage):
@@ -159,14 +159,14 @@ class MyPage(NotionPage):
 
 ```
 
-This page class can be passed when querying a database or getting a page.
+This page class can be passed when querying a data source or getting a page.
 
 ```python
 page = api.get_page(page_id='<PAGE_ID>',
                     cast_cls=MyPage)
 
 
-for page in database.query(cast_cls=MyPage, filters=NumberFilter(property='Value', equals=1)):
+for page in data_source.query(cast_cls=MyPage, filters=NumberFilter(property='Value', equals=1)):
     print('Custom processing:', page.get('Value').value)
     print('Raw value:', page._direct_get('Value').value)
 ```

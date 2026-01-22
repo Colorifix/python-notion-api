@@ -60,6 +60,7 @@ class NotionObject(NotionObjectBase, extra=Extra.allow):
         "list": "Pagination",
         "property_item": "PropertyItem",
         "database": "Database",
+        "data_source": "DataSource",
         "page": "Page",
         "user": "User",
         "block": "Block",
@@ -103,19 +104,39 @@ class Pagination(NotionObject):
         "user",
         "database",
         "property_item",
-        "page_or_database",
+        "page_or_data_source",
     ] = typeField
 
     _class_map = {
         "property_item": "PropertyItemPagination",
         "page": "PagePagination",
         "block": "BlockPagination",
-        "page_or_database": "PageOrDatabasePagination",
+        "page_or_data_source": "PageOrDataSourcePagination",
     }
 
     @property
     def _class_key_field(self):
         return self.pagination_type
+
+
+class DataSource(NotionObject):
+    _class_key_field = None
+
+    ds_object: str = Optional[objectField]
+    ds_id: str = idField
+    created_time: Optional[str]
+    created_by: Optional[User]
+    last_edited_time: Optional[str]
+    last_edited_by: Optional[User]
+    properties: Optional[Dict]
+    parent: Optional[ParentObject]
+    database_parent: Optional[ParentObject]
+    title: Optional[List[RichTextObject]]
+    description: Optional[List[RichTextObject]]
+    icon: Optional[Union[FileObject, EmojiObject]]
+    cover: Optional[Union[FileObject, Dict[str, Union[str, FileObject]]]]
+    url: Optional[str]
+    archived: Optional[bool]
 
 
 class Database(NotionObject):
@@ -124,18 +145,19 @@ class Database(NotionObject):
     db_object: str = objectField
     db_id: str = idField
     created_time: str
-    created_by: User
+    created_by: Optional[User]
     last_edited_time: str
-    last_edited_by: User
+    last_edited_by: Optional[User]
     title: List[RichTextObject]
     description: List[RichTextObject]
     icon: Optional[Union[FileObject, EmojiObject]]
     cover: Optional[Union[FileObject, Dict[str, Union[str, FileObject]]]]
-    properties: Dict
-    parent: Dict
+    parent: ParentObject
     url: str
-    archived: bool
+    in_trash: bool
     is_inline: bool
+    public_url: Optional[str]
+    data_sources: List[Dict]
 
 
 class Page(NotionObject):
@@ -151,6 +173,11 @@ class Page(NotionObject):
     properties: Dict[str, Dict]
     parent: ParentObject
     archived: bool
+    in_trash: bool
+    is_locked: bool
+    url: str
+    public_url: Optional[str]
+    icon: Optional[Union[FileObject, EmojiObject]]
 
 
 class Block(NotionObject):
