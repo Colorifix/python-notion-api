@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [2.0.0]  - 2026/01/07
+
+- Updating for Notion API version 2025-09-03
+
 ## [1.0.0]  - 2025/01/31
 
 - First public release
